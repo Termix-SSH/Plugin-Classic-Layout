@@ -11,6 +11,8 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   > = [
     () => ({
       useServerStatus: () => ({ getStatus: () => "online" }),
+      getFolderAuthOverride: async () => ({ credentialId: null }),
+      setFolderAuthOverride: async () => ({ success: true }),
     }),
   ];
   for (const factory of factories) {
@@ -108,4 +110,24 @@ it("leaves a normal folder editable", () => {
   ).toBeNull();
   const titles = [...document.querySelectorAll("button")].map((b) => b.title);
   expect(titles).toContain("hosts.editFolder");
+});
+
+it("offers a personal login only on folders with shared hosts", () => {
+  const shared = {
+    ...folder,
+    children: [{ id: "1", name: "a", isShared: true }],
+  } as unknown as HostFolder;
+  renderFolder(vi.fn(), shared);
+  const titles = [...document.querySelectorAll("button")].map((b) => b.title);
+  expect(titles).toContain("sharing.folderLogin.action");
+});
+
+it("has no personal login on a folder of your own hosts", () => {
+  const own = {
+    ...folder,
+    children: [{ id: "1", name: "a" }],
+  } as unknown as HostFolder;
+  renderFolder(vi.fn(), own);
+  const titles = [...document.querySelectorAll("button")].map((b) => b.title);
+  expect(titles).not.toContain("sharing.folderLogin.action");
 });

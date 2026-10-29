@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Bell, Boxes } from "lucide-react";
 import { AppRail } from "../../../src/frontend/sidebar/AppRail";
-import { RailBadge } from "../../../src/frontend/sidebar/RailBadge";
+import { RailBadge, RailStatus } from "../../../src/frontend/sidebar/RailBadge";
 import {
   registerRailItem,
   resetRegisteredRailItems,
@@ -157,6 +157,22 @@ describe("AppRail", () => {
     expect(onRailClick).toHaveBeenCalledWith("inbox");
   });
 
+  it("shows the status dot an item reports", () => {
+    registerRailItem({
+      id: "inbox",
+      icon: Bell,
+      labelKey: "test.inbox",
+      placement: "footer",
+      useStatus: () => "error",
+      pluginId: "demo",
+    } as never);
+    renderRail();
+    const dot = screen
+      .getByTitle("test.inbox")
+      .querySelector("[data-tone]") as HTMLElement;
+    expect(dot.dataset.tone).toBe("error");
+  });
+
   it("hides a footer item the user hid from Navigation", () => {
     localStorage.setItem("hiddenRailTabs", JSON.stringify(["inbox"]));
     registerRailItem({
@@ -244,6 +260,11 @@ describe("RailBadge", () => {
   it("shows nothing for zero", () => {
     const { container } = render(<RailBadge useBadge={() => 0} />);
     expect(container.textContent).toBe("");
+  });
+
+  it("shows no dot without a status", () => {
+    const { container } = render(<RailStatus useStatus={() => null} />);
+    expect(container.innerHTML).toBe("");
   });
 
   it("caps a large count", () => {

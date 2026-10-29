@@ -123,6 +123,39 @@ afterEach(() => {
   localStorage.clear();
 });
 
+it("starts compact host rows 48px apart before resize measurement", () => {
+  let initialSecondRowTransform: string | undefined;
+  vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(
+    function (this: HTMLElement) {
+      const bounds = rect(this);
+      if (!this.hasAttribute("data-index")) return bounds;
+      // Capture the estimate before synchronous DOM measurement can correct it.
+      initialSecondRowTransform ??=
+        this.parentElement?.querySelector<HTMLElement>('[data-index="1"]')
+          ?.style.transform;
+      return { ...bounds, height: 48, bottom: 48 };
+    },
+  );
+  const hosts = [
+    { id: "1", name: "Alpha", ip: "192.0.2.1", username: "u" },
+    { id: "2", name: "Beta", ip: "192.0.2.2", username: "u" },
+  ] as Host[];
+  const view = render(
+    <SidebarTree
+      children={hosts}
+      density="compact"
+      onOpenTab={vi.fn()}
+      onEditHost={vi.fn()}
+      selectionMode={false}
+      onToggleSelectionMode={vi.fn()}
+    />,
+  );
+  const rows = view.container.querySelectorAll<HTMLElement>("[data-index]");
+  expect(rows).toHaveLength(2);
+  expect(initialSecondRowTransform).toBe("translateY(48px)");
+  expect(rows[1].style.transform).toBe("translateY(48px)");
+});
+
 it("keeps an unchanged folder's measured height after changing density", () => {
   const host = {
     id: "1",

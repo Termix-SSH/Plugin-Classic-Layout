@@ -6,16 +6,21 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Host } from "@termix-ssh/plugin-sdk/ui";
 import { registerHostAction } from "@termix-ssh/plugin-sdk/testing-host";
 import { LOCAL_ADAPTIVE_PREFERENCES_KEY } from "@termix-ssh/plugin-sdk/testing-host";
 
-const { markTabSurfaceUsedMock, preloadTabSurfaceMock } = vi.hoisted(() => ({
-  markTabSurfaceUsedMock: vi.fn(),
-  preloadTabSurfaceMock: vi.fn(),
-}));
+const { markTabSurfaceUsedMock, preloadTabSurfaceMock, hostBadgesMock } =
+  vi.hoisted(() => ({
+    markTabSurfaceUsedMock: vi.fn(),
+    preloadTabSurfaceMock: vi.fn(),
+    hostBadgesMock: vi.fn<
+      () => ReturnType<typeof import("@termix-ssh/plugin-sdk/ui").useHostBadges>
+    >(() => []),
+  }));
 
 vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -26,6 +31,7 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
     () => ({
       markTabSurfaceUsed: markTabSurfaceUsedMock,
       preloadTabSurface: preloadTabSurfaceMock,
+      useHostBadges: hostBadgesMock,
     }),
     () => ({
       useHostStatus: () => null,
@@ -144,6 +150,7 @@ afterEach(() => {
   cleanup();
   markTabSurfaceUsedMock.mockClear();
   preloadTabSurfaceMock.mockClear();
+  hostBadgesMock.mockReset().mockReturnValue([]);
   localStorage.removeItem(LOCAL_ADAPTIVE_PREFERENCES_KEY);
 });
 
@@ -268,11 +275,12 @@ describe("HostItem density parity", () => {
     expect(screen.getByText("prod")).toBeTruthy();
   });
 
-  it("puts compact tags on the name row instead of their own line", () => {
+  it("puts compact tags on the details row", () => {
     renderHostItem("compact");
     const tag = screen.getByText("prod");
     expect(tag.dataset.testid).toBe("host-inline-tag");
-    expect(tag.closest("[data-drag-label]")).toBeTruthy();
+    expect(tag.closest("[data-drag-label]")).toBeNull();
+    expect(screen.getByTestId("host-details-row").contains(tag)).toBe(true);
   });
 
   it("hides tags in both densities when showTags is false", () => {
@@ -317,6 +325,226 @@ describe("HostItem density parity", () => {
     } finally {
       dispose();
     }
+  });
+});
+
+describe("HostItem compact rows", () => {
+  it.each([false, true])(
+    "keeps metadata below the name with selection mode %s",
+    (selectionMode) => {
+      hostBadgesMock.mockReturnValue([
+        {
+          id: "fixture-badge",
+          when: () => true,
+          component: () => <span>Plugin badge</span>,
+        },
+      ]);
+      render(
+        <HostItem
+          host={{
+            ...baseHost,
+            isShared: true,
+            lock: { pluginId: "fixture", pluginName: "Fixture", note: null },
+          }}
+          onOpenTab={noop}
+          onDelete={noop}
+          onDuplicate={noop}
+          onToggleExpand={noop}
+          density="compact"
+          trayTrigger="click"
+          selectionMode={selectionMode}
+          selected={selectionMode}
+        />,
+      );
+
+      const nameRow = screen
+        .getByText(baseHost.name)
+        .closest("[data-drag-label]")!;
+      const details = screen.getByTestId("host-details-row");
+      expect(nameRow.textContent).toBe(baseHost.name);
+      expect(nameRow.querySelector(".lucide-pin")).toBeTruthy();
+      expect(nameRow.querySelector(".lucide-lock")).toBeTruthy();
+      expect(nameRow.contains(screen.getByTitle("hosts.expandSubHosts"))).toBe(
+        true,
+      );
+      expect(!!nameRow.querySelector(".lucide-check")).toBe(selectionMode);
+      for (const text of [
+        baseHost.ip,
+        "prod",
+        "Plugin badge",
+        "hosts.sharing.sharedBadge",
+      ]) {
+        const metadata = screen.getByText(text);
+        expect(details.contains(metadata)).toBe(true);
+        expect(nameRow.contains(metadata)).toBe(false);
+      }
+      expect(nameRow.querySelectorAll("button")).toHaveLength(1);
+      if (selectionMode) {
+        expect(screen.queryByTestId("host-inline-actions")).toBeNull();
+        expect(screen.queryByTitle("hosts.expandActions")).toBeNull();
+      } else {
+        expect(
+          details.contains(screen.getByTestId("host-inline-actions")),
+        ).toBe(true);
+        expect(details.contains(screen.getByTitle("hosts.expandActions"))).toBe(
+          true,
+        );
+      }
+    },
+  );
+
+  it.each(["hover", "click", "always", "actionsOnly"] as const)(
+    "preserves compact action visibility in %s mode",
+    (trayTrigger) => {
+      const props = {
+        host: baseHost,
+        onOpenTab: noop,
+        onEditHost: noop,
+        onDelete: noop,
+        onDuplicate: noop,
+        density: "compact" as const,
+        trayTrigger,
+      };
+      const { rerender } = render(<HostItem {...props} />);
+      const actions = () => screen.getByTestId("host-inline-actions");
+      const management = () =>
+        screen.getByTitle("hosts.editHostAction").parentElement!;
+      const expectVisibility = (
+        visible: boolean,
+        managementVisible: boolean,
+      ) => {
+        expect(actions().classList.contains("hidden")).toBe(!visible);
+        expect(management().classList.contains("hidden")).toBe(
+          !managementVisible,
+        );
+        expect(screen.getByText(baseHost.ip).closest(".hidden")).toBeNull();
+      };
+
+      expectVisibility(
+        trayTrigger === "always" || trayTrigger === "actionsOnly",
+        trayTrigger === "always",
+      );
+      rerender(<HostItem {...props} isHovered />);
+      expectVisibility(
+        trayTrigger !== "click",
+        trayTrigger === "always" || trayTrigger === "hover",
+      );
+      rerender(<HostItem {...props} isTrayOpen />);
+      expectVisibility(true, true);
+      rerender(<HostItem {...props} isMenuOpen />);
+      expectVisibility(true, true);
+      rerender(<HostItem {...props} selectionMode isTrayOpen isHovered />);
+      expect(screen.queryByTestId("host-inline-actions")).toBeNull();
+      expect(screen.getByText(baseHost.ip).closest(".hidden")).toBeNull();
+    },
+  );
+
+  it("toggles second-row actions and runs them without launching the host row", () => {
+    const Icon = (() => null) as never;
+    const dispose = registerHostAction({
+      id: "compact-terminal",
+      titleKey: "fixture.compactTerminal",
+      icon: Icon,
+      kind: "connect",
+      tabType: "terminal",
+      when: () => true,
+    });
+    const onOpenTab = vi.fn();
+    const onEditHost = vi.fn();
+    try {
+      function Harness() {
+        const [isTrayOpen, setTrayOpen] = useState(false);
+        return (
+          <HostItem
+            host={baseHost}
+            onOpenTab={onOpenTab}
+            onEditHost={onEditHost}
+            onDelete={noop}
+            onDuplicate={noop}
+            density="compact"
+            trayTrigger="click"
+            isTrayOpen={isTrayOpen}
+            onTrayOpenChange={setTrayOpen}
+          />
+        );
+      }
+      render(<Harness />);
+      const toggle = screen.getByRole("button", {
+        name: "hosts.expandActions",
+        expanded: false,
+      });
+      expect(toggle.getAttribute("type")).toBe("button");
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(onOpenTab).not.toHaveBeenCalled();
+      expect(
+        screen.getByTestId("host-inline-actions").classList.contains("hidden"),
+      ).toBe(false);
+      fireEvent.click(screen.getByTitle("hosts.editHostAction"));
+      expect(onEditHost).toHaveBeenCalledOnce();
+      expect(onOpenTab).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByTitle("fixture.compactTerminal"));
+      expect(onOpenTab).toHaveBeenCalledExactlyOnceWith("terminal", {
+        forceNewTab: true,
+      });
+      fireEvent.click(screen.getByTitle("hosts.collapseActions"));
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(
+        screen.getByTestId("host-inline-actions").classList.contains("hidden"),
+      ).toBe(true);
+      expect(onOpenTab).toHaveBeenCalledOnce();
+    } finally {
+      act(() => dispose());
+    }
+  });
+
+  it("shows the full compact name, address, tags and status in the name tooltip", async () => {
+    const host = {
+      ...baseHost,
+      tags: ["prod", "web", "all-tags-still-accessible"],
+    };
+    render(
+      <HostItem
+        host={host}
+        onOpenTab={noop}
+        onDelete={noop}
+        onDuplicate={noop}
+        density="compact"
+        showTags={false}
+        rowFields={{
+          ...defaultHostRowFields(),
+          showAddress: false,
+          showUsername: false,
+          showPort: false,
+        }}
+      />,
+    );
+    expect(screen.queryByText("prod")).toBeNull();
+    const accessibleDetails = screen.getByText(
+      "root@10.0.0.5:22, prod, web, all-tags-still-accessible",
+    );
+    expect(accessibleDetails.classList.contains("sr-only")).toBe(true);
+    expect(
+      screen.getByTestId("host-details-row").contains(accessibleDetails),
+    ).toBe(true);
+    await userEvent.hover(screen.getByText(host.name));
+    const tooltip = await screen.findByRole("tooltip");
+    for (const text of [
+      host.name,
+      "root@10.0.0.5:22",
+      ...host.tags,
+      "SSH: hosts.status.offline",
+    ]) {
+      expect(tooltip.textContent).toContain(text);
+    }
+  });
+
+  it("keeps the comfortable name tooltip limited to status", async () => {
+    renderHostItem("comfortable");
+    await userEvent.hover(screen.getByText(baseHost.name));
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip.textContent).toBe("SSH: hosts.status.offline");
+    expect(tooltip.textContent).not.toContain(baseHost.ip);
   });
 });
 

@@ -42,8 +42,12 @@ import { HostStatusCard } from "../../../src/frontend/dashboard/DashboardTab";
 import type { Host } from "@termix-ssh/plugin-sdk/ui";
 import {
   registerHostAction,
+  registerSlotContribution,
+  resetActionRegistry,
   resetHostContributions,
+  setPermissionsForTesting,
 } from "@termix-ssh/plugin-sdk/testing-host";
+import type React from "react";
 
 afterEach(cleanup);
 
@@ -121,5 +125,46 @@ describe("dashboard host routing", () => {
     render(<HostStatusCard hosts={[host]} onOpenTab={onOpenTab} />);
     fireEvent.click(screen.getByText("Remote host"));
     expect(onOpenTab).toHaveBeenCalledWith(host, expected);
+  });
+});
+
+describe("host row badge slot", () => {
+  beforeEach(() => setPermissionsForTesting([]));
+  afterEach(() => resetActionRegistry());
+
+  it("lets a plugin replace the status badge and falls back to ours", () => {
+    registerSlotContribution("dashboard.hostRowBadge", {
+      actionId: "health-badge",
+      titleKey: "x",
+      kind: "component",
+      component: (props) =>
+        props.host && (props.host as Host).name === "bad" ? (
+          <span>failing {String(props.online)}</span>
+        ) : (
+          <>{props.fallback as React.ReactNode}</>
+        ),
+    });
+    const hosts = [
+      { id: "1", name: "bad", ip: "192.0.2.1", status: "online" },
+      { id: "2", name: "good", ip: "192.0.2.2", status: "online" },
+    ] as unknown as Host[];
+    render(<HostStatusCard hosts={hosts} onOpenTab={() => {}} />);
+    expect(screen.getByText("failing true")).toBeTruthy();
+    expect(screen.getAllByText("hosts.status.online")).toHaveLength(1);
+  });
+
+  it("keeps the checking badge while status loads", () => {
+    registerSlotContribution("dashboard.hostRowBadge", {
+      actionId: "health-badge",
+      titleKey: "x",
+      kind: "component",
+      component: () => <span>replaced</span>,
+    });
+    const host = { id: "1", name: "a", ip: "192.0.2.1" } as Host;
+    render(
+      <HostStatusCard hosts={[host]} onOpenTab={() => {}} statusLoading />,
+    );
+    expect(screen.queryByText("replaced")).toBeNull();
+    expect(screen.getByText("dashboardTab.checking")).toBeTruthy();
   });
 });
