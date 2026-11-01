@@ -346,7 +346,7 @@ export function AppRail({
       style={{ width: rem(takesSpace ? 172 : 40) }}
     >
       <div
-        className="absolute inset-y-0 left-0 z-40 flex flex-col items-stretch bg-sidebar border-r border-border overflow-hidden pt-2 gap-1 transition-[width] duration-200 min-h-0"
+        className="absolute inset-y-0 left-0 z-[60] flex flex-col items-stretch bg-sidebar border-r border-border overflow-hidden pt-2 gap-1 transition-[width] duration-200 min-h-0"
         style={{ width: rem(railExpanded ? 172 : 40) }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

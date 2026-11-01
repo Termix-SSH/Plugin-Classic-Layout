@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1
+
+### Added
+
+- Plugins can add buttons to the right of the tab bar, next to split view. SSH Terminal puts its terminal tools there
+
+### Fixed
+
+- The side rail no longer opens behind Customize sidebar and other panels when you hover over it
+
 ## 1.1.0
 
 ### Added

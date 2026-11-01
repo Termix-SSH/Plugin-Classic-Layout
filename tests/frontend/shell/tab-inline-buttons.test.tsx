@@ -72,4 +72,41 @@ describe("tab inline buttons", () => {
     act(() => attach({ getShareTarget: () => null }));
     expect(screen.getByTitle("share")).toBeTruthy();
   });
+
+  it("draws plugin buttons beside split view with the target terminal", () => {
+    declareActionSlot({ id: "tabbar.actions", accepts: ["component"] });
+    registerAction("test.tools", () => {});
+    registerSlotContribution("tabbar.actions", {
+      actionId: "test.tools",
+      titleKey: "tools",
+      kind: "component",
+      component: ({ targetTab, className }: Record<string, unknown>) => (
+        <button className={className as string}>
+          {(targetTab as Tab | undefined)?.label ?? "none"}
+        </button>
+      ),
+    });
+    const target = {
+      id: "terminal-1",
+      type: "terminal",
+      label: "web-01",
+    } as unknown as Tab;
+    render(
+      <TabBar
+        tabs={[target]}
+        activeTabId="terminal-1"
+        splits={[]}
+        activeSplitFull={false}
+        onSetActiveTab={() => {}}
+        onCloseTab={() => {}}
+        onRefreshTab={() => {}}
+        onReorderTabs={() => {}}
+        onSplitAction={() => {}}
+        isAppFullscreen={false}
+        onToggleAppFullscreen={() => {}}
+        targetTab={target}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "web-01" })).toBeTruthy();
+  });
 });

@@ -36,4 +36,20 @@ describe("ClassicLayout", () => {
     );
     expect(document.body.textContent).toContain("nav.hosts");
   });
+
+  // z-40 inline views and z-50 prompts must stay under the rail, and the rail
+  // under dialogs on the body, so the shell row needs its own stacking context.
+  it("keeps the rail above panels but inside the shell's stacking context", () => {
+    const { container } = render(
+      <ServerStatusProvider isAuthenticated>
+        <ShellControllerProvider username="admin" onLogout={() => {}}>
+          <ClassicLayout />
+          <TabPortals />
+        </ShellControllerProvider>
+      </ServerStatusProvider>,
+    );
+    const rail = container.querySelector(".z-\\[60\\]");
+    expect(rail).not.toBeNull();
+    expect(rail?.closest(".isolate")).not.toBeNull();
+  });
 });
