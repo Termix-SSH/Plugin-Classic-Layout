@@ -6,6 +6,8 @@
 
 - A click on a host can open its host page, when a plugin offers one
 - API keys can be limited to reading or running actions
+- The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own
+- A dashboard you never arranged puts Needs attention first, when Operations Center is on
 
 ### Changed
 
