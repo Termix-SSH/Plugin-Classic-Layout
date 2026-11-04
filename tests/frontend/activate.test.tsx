@@ -40,10 +40,11 @@ describe(`${manifest.id} activate`, () => {
     ]);
   });
 
-  it("takes over the preset and appearance onboarding steps", async () => {
+  it("takes over the preset and appearance steps and adds host rows", async () => {
     rendered = await renderWithApp(plugin, { manifest, locales });
     expect(rendered.registered.onboardingSteps().sort()).toEqual([
       "appearance",
+      "host-rows",
       "preset",
     ]);
   });

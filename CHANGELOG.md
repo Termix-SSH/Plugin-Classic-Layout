@@ -10,6 +10,10 @@
 - Pick which buttons show on one host's row from its menu. Customize sidebar keeps the default for every host
 - The host menu lists the host's actions, when Operations Center is on
 - API keys can be limited to reading or running actions
+- The dashboard is a grid of tiles you can move and resize freely, with as many columns as you like. Your old layout moves over on its own
+- Until you arrange it, the dashboard fills the screen down to the bottom
+- The dashboard's add list has a search, filters and groups, and can add a plugin's status or action as its own tile, like Operations Center's
+- A setup step to pick how host rows work, connect buttons, buttons plus a host page button, or only the host page, when a plugin offers a host page
 - The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own
 - A dashboard you never arranged puts Needs attention first, when Operations Center is on
 
