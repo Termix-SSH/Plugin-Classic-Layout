@@ -5,6 +5,7 @@
 ### Added
 
 - A click on a host can open its host page, when a plugin offers one
+- API keys can be limited to reading or running actions
 
 ### Changed
 
