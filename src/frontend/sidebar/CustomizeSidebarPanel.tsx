@@ -12,9 +12,16 @@ import {
   type HostSidebarPreferences,
   type HostTrayTrigger,
 } from "@termix-ssh/plugin-sdk/ui";
-import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
+import {
+  usePluginUiPreferences,
+  useTranslation,
+} from "@termix-ssh/plugin-sdk/frontend";
 import { ListChecks, PanelTop, Rows3, SquareStack } from "lucide-react";
-import { HOST_PAGE_TAB, showsInBar } from "./tree/host-bar-actions";
+import {
+  HOST_PAGE_TAB,
+  hostToolsMode,
+  showsInBar,
+} from "./tree/host-bar-actions";
 import { stripedRows } from "./striped-rows";
 
 const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
@@ -48,6 +55,10 @@ export function CustomizeSidebarPanel({
   const hasHostPage = actions.some(
     (action) => action.tabType === HOST_PAGE_TAB,
   );
+  const layoutPrefs = usePluginUiPreferences<{ hostTools?: string }>();
+  // The page is the only way in, so click and row button choices do nothing.
+  const pageOnly =
+    hasHostPage && hostToolsMode(layoutPrefs.values.hostTools) === "only";
 
   return (
     <InlineView
@@ -206,6 +217,7 @@ export function CustomizeSidebarPanel({
             </div>
             <Select2
               value={preferences.display.hostClickBehavior}
+              disabled={pageOnly}
               onChange={(e) =>
                 update((prev) => ({
                   ...prev,
@@ -227,6 +239,30 @@ export function CustomizeSidebarPanel({
               <option value="hostPage">{t("hosts.hostClickHostPage")}</option>
             </Select2>
           </div>
+          {hasHostPage && (
+            <div className="flex flex-col gap-1.5 py-3 border-b border-border last:border-0">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium leading-snug">
+                  {t("hostTools.mode")}
+                </span>
+                <span className="text-xs text-muted-foreground leading-snug">
+                  {t("hostTools.modeDesc")}
+                </span>
+              </div>
+              <Select2
+                value={hostToolsMode(layoutPrefs.values.hostTools)}
+                onChange={(e) => {
+                  const mode = hostToolsMode(e.target.value);
+                  layoutPrefs.set("hostTools", mode === "tab" ? null : mode);
+                }}
+                className="h-8 w-full border border-border bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="tab">{t("hostTools.modeTab")}</option>
+                <option value="page">{t("hostTools.modePage")}</option>
+                <option value="only">{t("hostTools.modeOnly")}</option>
+              </Select2>
+            </div>
+          )}
           <SettingRow
             label={t("hosts.openOnDoubleClick")}
             description={t("hosts.openOnDoubleClickDesc")}
@@ -278,7 +314,7 @@ export function CustomizeSidebarPanel({
           </SettingRow>
         </SectionCard>
 
-        {actions.length > 0 && (
+        {actions.length > 0 && !pageOnly && (
           <SectionCard
             title={t("hosts.connectBarTitle")}
             icon={<PanelTop className="size-3.5" />}
@@ -300,7 +336,6 @@ export function CustomizeSidebarPanel({
                       checked={showsInBar(
                         preferences.display.barActions,
                         action,
-                        hasHostPage,
                       )}
                       onChange={(v) =>
                         update((prev) => ({

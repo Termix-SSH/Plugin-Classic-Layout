@@ -5,13 +5,13 @@
 ### Added
 
 - A click on a host can open its host page, when a plugin offers one
+- Host tools can open inside the host page instead of their own tab, set in Customize sidebar. Their own tab stays the default
+- Only the host page, in the same setting, takes the connect buttons off host rows so a click on a host opens its page
+- Pick which buttons show on host rows right from the host menu
+- The host menu lists the host's actions, when Operations Center is on
 - API keys can be limited to reading or running actions
 - The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own
 - A dashboard you never arranged puts Needs attention first, when Operations Center is on
-
-### Changed
-
-- With a host page available, the host row shows only ways to connect and the host page button. Tools you turned on in Customize stay
 
 ### Fixed
 

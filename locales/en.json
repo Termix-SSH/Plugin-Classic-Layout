@@ -845,5 +845,13 @@
     "presetChangeLater": "You can switch presets or change any single setting later in Settings, under Interface.",
     "appearanceTitle": "Make it yours",
     "appearanceIntro": "Pick a theme, an accent color, a font and your language. Changes show right away, and you can change them later in Settings."
+  },
+  "hostTools": {
+    "mode": "Open host tools in",
+    "modeDesc": "Where Docker, Files and other tool buttons open. The host page keeps every tool for a host in one tab. With Only the host page, host rows have no connect buttons and a click opens the host's page.",
+    "modeTab": "Their own tab",
+    "modePage": "The host page",
+    "rowButtons": "Buttons on host rows",
+    "modeOnly": "Only the host page"
   }
 }

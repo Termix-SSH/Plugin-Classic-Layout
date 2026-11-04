@@ -29,7 +29,7 @@ import {
   useSlotContributions,
   useTranslation,
 } from "@termix-ssh/plugin-sdk/frontend";
-import { setBarActions } from "./tree/host-bar-actions";
+import { setBarActionChanger, setBarActions } from "./tree/host-bar-actions";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpDown,
@@ -251,6 +251,18 @@ export function HostsPanel({
   useEffect(() => {
     setBarActions(sidebarPrefs.display.barActions);
   }, [sidebarPrefs.display.barActions]);
+  useEffect(() => {
+    setBarActionChanger((id, shown) =>
+      updateSidebarPrefs((prev) => ({
+        ...prev,
+        display: {
+          ...prev.display,
+          barActions: { ...prev.display.barActions, [id]: shown },
+        },
+      })),
+    );
+    return () => setBarActionChanger(null);
+  }, [updateSidebarPrefs]);
   const sortKey = sidebarPrefs.sort.key;
   const pinnedFirst = sidebarPrefs.sort.pinnedFirst;
   const { arrangeLocked, toggleArrangeLock } = useArrangeLock(
