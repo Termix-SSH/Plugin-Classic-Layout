@@ -8,6 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -56,13 +58,14 @@ import {
 } from "@termix-ssh/plugin-sdk/frontend";
 import {
   HOST_PAGE_TAB,
-  canChangeBarActions,
-  changeBarAction,
+  canChangeHostRows,
+  changeHostRow,
   hostToolsMode,
   openInHostPage,
   opensInHostPage,
   showsInBar,
   useBarActions,
+  useHostRowPrefs,
 } from "../host-bar-actions";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
@@ -81,6 +84,7 @@ import {
   Lock,
   MemoryStick,
   MoreHorizontal,
+  MousePointerClick,
   Pencil,
   Pin,
   Share2,
@@ -297,7 +301,11 @@ export function HostItem({
   const allHostActions = useHostActions();
   const pluginActions = hostActionsFor(allHostActions, host);
   const barActions = useBarActions();
-  const layoutPrefs = usePluginUiPreferences<{ hostTools?: string }>();
+  const rowPrefs = useHostRowPrefs(String(host.id));
+  const layoutPrefs = usePluginUiPreferences<{
+    hostTools?: string;
+    clickAction?: string;
+  }>();
   const badges = hostBadgesFor(useHostBadges(), host);
   const pluginMenuItems = hostMenuItemsFor(useHostContextMenuItems(), host);
   const splitTargets = useSplitTargets();
@@ -410,11 +418,11 @@ export function HostItem({
     : "tab";
   const toolsInPage = toolsMode !== "tab";
   const pageOnly = toolsMode === "only";
-  // Empty when no running plugin can connect to this host.
-  const defaultAction: TabType =
-    (hostClickBehavior === "hostPage" || pageOnly) && hasHostPage
-      ? HOST_PAGE_TAB
-      : (defaultConnectAction(allHostActions, host)?.tabType ?? "");
+  // The first way to connect, used when no click action is picked or the
+  // picked one does not apply here. Empty when nothing can connect.
+  const connectAction: TabType = pageOnly
+    ? HOST_PAGE_TAB
+    : (defaultConnectAction(allHostActions, host)?.tabType ?? "");
   const openHostTab = (
     type: TabType,
     options?: {
@@ -447,15 +455,6 @@ export function HostItem({
     });
   };
 
-  /** What a click on the row opens. Host page only mode reuses an open page. */
-  const openDefault = (options?: { forceNewTab?: boolean }) => {
-    if (pageOnly && !options?.forceNewTab) {
-      openToolInPage(HOST_PAGE_TAB, "overview");
-      return;
-    }
-    openHostTab(defaultAction, options);
-  };
-
   const runPluginAction = (action: HostActionDef) => {
     if (action.run) action.run(host, rowShell);
     else if (toolsInPage && action.tabType === HOST_PAGE_TAB)
@@ -475,7 +474,7 @@ export function HostItem({
         icon: action.icon as typeof Terminal,
         label: action.label?.(host) ?? t(action.titleKey),
         tabType: action.tabType,
-        tray: showsInBar(barActions, action),
+        tray: showsInBar(barActions, action, rowPrefs?.bar),
         items:
           items && items.length > 1
             ? items.map((item) => ({
@@ -492,6 +491,45 @@ export function HostItem({
     }),
   ].sort((a, b) => a.order - b.order || a.key.localeCompare(b.key));
   const trayEntries = pageOnly ? [] : rowEntries.filter((entry) => entry.tray);
+
+  // What a click runs: this host's pick, then the default pick, then the
+  // first way to connect. Host page only mode always opens the page.
+  const clickable = rowEntries.filter((entry) => !entry.items);
+  const hostPageEntry = clickable.find(
+    (entry) => entry.tabType === HOST_PAGE_TAB,
+  );
+  const pickFrom = (id: string | undefined) =>
+    id ? clickable.find((entry) => entry.key === id) : undefined;
+  const defaultClick =
+    pickFrom(layoutPrefs.values.clickAction) ??
+    (hostClickBehavior === "hostPage" ? hostPageEntry : undefined);
+  const clickEntry = pageOnly
+    ? undefined
+    : (pickFrom(rowPrefs?.click) ?? defaultClick);
+  const defaultAction: TabType = clickEntry
+    ? (clickEntry.tabType ?? "")
+    : connectAction;
+  const defaultClickLabel =
+    defaultClick?.label ??
+    clickable.find((entry) => entry.tabType === connectAction)?.label ??
+    "";
+
+  /** What a click on the row opens. Host page only mode reuses an open page. */
+  const openDefault = (options?: { forceNewTab?: boolean }) => {
+    if (pageOnly && !options?.forceNewTab) {
+      openToolInPage(HOST_PAGE_TAB, "overview");
+      return;
+    }
+    if (clickEntry) {
+      if (options?.forceNewTab && clickEntry.tabType) {
+        openHostTab(clickEntry.tabType, options);
+      } else {
+        clickEntry.run();
+      }
+      return;
+    }
+    openHostTab(connectAction, options);
+  };
 
   const connectionButtons = (
     <>
@@ -694,7 +732,48 @@ export function HostItem({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           )}
-          {!pageOnly && canChangeBarActions() && rowEntries.length > 0 && (
+          {!pageOnly && canChangeHostRows() && clickable.length > 1 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <MousePointerClick className="size-3.5 mr-2" />
+                {t("hostTools.clickOpens")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup
+                  value={pickFrom(rowPrefs?.click)?.key ?? ""}
+                  onValueChange={(value) =>
+                    changeHostRow(String(host.id), {
+                      click: value || undefined,
+                    })
+                  }
+                >
+                  <DropdownMenuRadioItem
+                    value=""
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {t("hostTools.useDefaultNamed", {
+                      name: defaultClickLabel,
+                    })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuSeparator />
+                  {clickable.map((entry) => {
+                    const Icon = entry.icon;
+                    return (
+                      <DropdownMenuRadioItem
+                        key={entry.key}
+                        value={entry.key}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Icon className="size-3.5 mr-2" />
+                        {entry.label}
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+          {!pageOnly && canChangeHostRows() && rowEntries.length > 0 && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <PanelTop className="size-3.5 mr-2" />
@@ -710,7 +789,12 @@ export function HostItem({
                       onSelect={(e) => e.preventDefault()}
                       onClick={(e) => e.stopPropagation()}
                       onCheckedChange={(checked) =>
-                        changeBarAction(entry.key, checked === true)
+                        changeHostRow(String(host.id), {
+                          bar: {
+                            ...rowPrefs?.bar,
+                            [entry.key]: checked === true,
+                          },
+                        })
                       }
                     >
                       <Icon className="size-3.5 mr-2" />
@@ -718,6 +802,16 @@ export function HostItem({
                     </DropdownMenuCheckboxItem>
                   );
                 })}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={!rowPrefs?.bar}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    changeHostRow(String(host.id), { bar: undefined });
+                  }}
+                >
+                  {t("hostTools.useDefaultButtons")}
+                </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           )}

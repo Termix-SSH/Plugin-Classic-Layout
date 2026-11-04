@@ -4,10 +4,10 @@
 
 ### Added
 
-- A click on a host can open its host page, when a plugin offers one
+- Pick what a click on a host opens, such as the terminal, Docker or the host page. Set a default in Customize sidebar and change it for one host from its menu
 - Host tools can open inside the host page instead of their own tab, set in Customize sidebar. Their own tab stays the default
 - Only the host page, in the same setting, takes the connect buttons off host rows so a click on a host opens its page
-- Pick which buttons show on host rows right from the host menu
+- Pick which buttons show on one host's row from its menu. Customize sidebar keeps the default for every host
 - The host menu lists the host's actions, when Operations Center is on
 - API keys can be limited to reading or running actions
 - The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own

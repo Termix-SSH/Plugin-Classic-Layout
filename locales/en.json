@@ -764,6 +764,11 @@
       "allPluginsBeta": "Use betas for all plugins",
       "allPluginsStable": "All plugins back to stable",
       "saveFailed": "Could not save the change"
+    },
+    "user": {
+      "hostRows": {
+        "label": "Host row choices"
+      }
     }
   },
   "hostDefaults": {
@@ -852,6 +857,12 @@
     "modeTab": "Their own tab",
     "modePage": "The host page",
     "rowButtons": "Buttons on host rows",
-    "modeOnly": "Only the host page"
+    "modeOnly": "Only the host page",
+    "clickOpens": "Click opens",
+    "clickOpensDesc": "What a click on a host runs. Pick something else for one host from its menu.",
+    "clickAuto": "The first way to connect",
+    "useDefaultNamed": "Default ({{name}})",
+    "useDefaultButtons": "Use the default buttons",
+    "perHostHint": "To change them for one host, use Buttons on host rows in its menu."
   }
 }

@@ -110,6 +110,7 @@ import {
   HostItem,
   formatHostAddress,
 } from "../../../../../src/frontend/sidebar/tree/HostItem/HostItem";
+import { setHostRows } from "../../../../../src/frontend/sidebar/tree/host-bar-actions";
 import { defaultHostRowFields } from "@termix-ssh/plugin-sdk/ui";
 
 const baseHost: Host = {
@@ -165,6 +166,7 @@ afterEach(() => {
   uiPrefsMock.mockReset().mockReturnValue({});
   invokeActionMock.mockReset().mockResolvedValue(undefined);
   localStorage.removeItem(LOCAL_ADAPTIVE_PREFERENCES_KEY);
+  setHostRows({});
 });
 
 describe("HostItem density parity", () => {
@@ -807,6 +809,33 @@ describe("HostItem host page tools", () => {
         "overview",
       );
       expect(onOpenTab).not.toHaveBeenCalled();
+    }));
+
+  it("runs the default click pick", () =>
+    withTools(() => {
+      uiPrefsMock.mockReturnValue({ clickAction: "docker" });
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByText("web-01"));
+      expect(onOpenTab).toHaveBeenCalledWith("docker", expect.anything());
+    }));
+
+  it("lets one host's click pick beat the default", () =>
+    withTools(() => {
+      uiPrefsMock.mockReturnValue({ clickAction: "docker" });
+      setHostRows({ "1": { click: "host-page" } });
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByText("web-01"));
+      expect(onOpenTab).toHaveBeenCalledWith("host", expect.anything());
+    }));
+
+  it("hides a row button on one host only", () =>
+    withTools(() => {
+      setHostRows({ "1": { bar: { docker: false } } });
+      renderRow(vi.fn());
+      expect(screen.queryByTitle("fixture.docker")).toBeNull();
+      expect(screen.getByTitle("fixture.hostPage")).toBeTruthy();
     }));
 
   it("ignores host page only mode when no plugin offers a host page", () => {
