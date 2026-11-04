@@ -1,7 +1,10 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { HostFolder } from "@termix-ssh/plugin-sdk/ui";
-import { FolderItem } from "../../../../../src/frontend/sidebar/tree/FolderItem/FolderItem";
+import {
+  FolderItem,
+  folderHostCount,
+} from "../../../../../src/frontend/sidebar/tree/FolderItem/FolderItem";
 
 vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -130,4 +133,17 @@ it("has no personal login on a folder of your own hosts", () => {
   renderFolder(vi.fn(), own);
   const titles = [...document.querySelectorAll("button")].map((b) => b.title);
   expect(titles).not.toContain("sharing.folderLogin.action");
+});
+
+it("counts sub-hosts in the folder total", () => {
+  const nested = {
+    ...folder,
+    children: [
+      { id: "1", name: "a", childHosts: [{ id: "2", name: "b" }] },
+      { id: "3", name: "c" },
+    ],
+  } as unknown as HostFolder;
+  expect(folderHostCount(nested)).toBe(3);
+  renderFolder(vi.fn(), nested);
+  expect(document.body.textContent).toContain("3/3");
 });

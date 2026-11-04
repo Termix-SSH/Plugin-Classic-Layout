@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+### Fixed
+
+- Folder host counts now include sub-hosts, so a folder no longer shows more online hosts than it has
+
 ## 1.1.1
 
 ### Added
