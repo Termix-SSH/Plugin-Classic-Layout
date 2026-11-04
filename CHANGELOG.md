@@ -2,6 +2,14 @@
 
 ## 1.1.2
 
+### Added
+
+- A click on a host can open its host page, when a plugin offers one
+
+### Changed
+
+- With a host page available, the host row shows only ways to connect and the host page button. Tools you turned on in Customize stay
+
 ### Fixed
 
 - Folder host counts now include sub-hosts, so a folder no longer shows more online hosts than it has

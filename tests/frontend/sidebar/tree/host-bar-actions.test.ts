@@ -13,4 +13,15 @@ describe("showsInBar", () => {
     ).toBe(true);
     expect(showsInBar({ "ai-agent": false }, { id: "ai-agent" })).toBe(false);
   });
+
+  it("moves tools to the host page when there is one", () => {
+    const docker = { id: "docker", kind: "open", tabType: "docker" };
+    const page = { id: "host-page", kind: "open", tabType: "host" };
+    const terminal = { id: "terminal", kind: "connect", tabType: "terminal" };
+    expect(showsInBar({}, docker, true)).toBe(false);
+    expect(showsInBar({}, page, true)).toBe(true);
+    expect(showsInBar({}, terminal, true)).toBe(true);
+    expect(showsInBar({}, docker, false)).toBe(true);
+    expect(showsInBar({ docker: true }, docker, true)).toBe(true);
+  });
 });
