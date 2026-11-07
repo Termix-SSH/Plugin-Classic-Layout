@@ -15,6 +15,8 @@ import {
   adminUpdateUserCredential,
   type Credential,
   type Host,
+  FakeSwitch,
+  isElectron,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { Copy, Info, Lock, Upload, X } from "lucide-react";
@@ -74,6 +76,7 @@ export function CredentialEditorView({
   ) => setCredForm((p) => ({ ...p, [k]: v }));
   const [saving, setSaving] = useState(false);
   const [savingAsNew, setSavingAsNew] = useState(false);
+  const [deviceOnly, setDeviceOnly] = useState(false);
 
   const buildCredentialData = () => {
     const hasKey =
@@ -100,6 +103,7 @@ export function CredentialEditorView({
             ? undefined
             : credForm.passphrase || null
           : null,
+        ...(deviceOnly ? { localOnly: true } : {}),
       },
     };
   };
@@ -274,6 +278,19 @@ export function CredentialEditorView({
                 folderPaths={existingFolders}
               />
             </div>
+            {!credential && !adminTargetUserId && isElectron() && (
+              <div className="flex items-center justify-between gap-3 col-span-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs">
+                    {t("sharing.deviceLogin.keepOnDevice")}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {t("sharing.deviceLogin.keepOnDeviceDesc")}
+                  </span>
+                </div>
+                <FakeSwitch checked={deviceOnly} onChange={setDeviceOnly} />
+              </div>
+            )}
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {t("hosts.descriptionLabel")}

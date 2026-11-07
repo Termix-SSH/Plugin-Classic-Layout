@@ -796,6 +796,15 @@
   "sharing": {
     "revokeConfirm": "Remove access for {{name}}?",
     "revoke": "Remove access",
+    "deviceLogin": {
+      "label": "Login on this device only",
+      "none": "None",
+      "hint": "Stays on this device and is never sent to the server. It is used first, and connections start from this device.",
+      "noCredentials": "Add a credential with Keep on this device only to use it here.",
+      "saved": "Device login saved",
+      "keepOnDevice": "Keep on this device only",
+      "keepOnDeviceDesc": "The password or key never syncs to the server. Use it as a device login on shared hosts."
+    },
     "folderLogin": {
       "action": "Set personal login for shared hosts",
       "title": "Personal login for this folder",

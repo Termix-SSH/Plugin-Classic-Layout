@@ -17,6 +17,7 @@
 - The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own
 - A dashboard you never arranged puts Needs attention first, when Operations Center is on
 - Admin setting to stop anyone saving passwords and keys, with a note in the host and credential editors (Termix #1753)
+- Desktop app: keep a credential on this device only and use it as your login for a shared host or folder (Termix #1749)
 
 ### Changed
 
