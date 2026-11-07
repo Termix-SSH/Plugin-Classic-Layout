@@ -52,6 +52,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { canOpenHostEditor } from "../sidebar/host-permissions";
+import { usePaletteDismiss } from "./use-palette-dismiss";
 
 interface CommandPaletteProps {
   /** Opens settings, optionally at one section. */
@@ -119,19 +120,7 @@ export function CommandPalette({
     };
   }, [isOpen, paletteGroups]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [isOpen, setIsOpen]);
+  usePaletteDismiss(isOpen, setIsOpen);
 
   const query = search.trim().toLowerCase();
   const searching = query.length > 0;
