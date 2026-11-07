@@ -120,7 +120,7 @@ export function CommandPalette({
     };
   }, [isOpen, paletteGroups]);
 
-  usePaletteDismiss(isOpen, setIsOpen);
+  const handleAction = usePaletteDismiss(isOpen, setIsOpen);
 
   const query = search.trim().toLowerCase();
   const searching = query.length > 0;
@@ -163,11 +163,6 @@ export function CommandPalette({
 
   const activeTargetTab =
     terminalTabs.find((tab) => tab.id === activeTabId) ?? terminalTabs[0];
-
-  const handleAction = (action: () => void) => {
-    action();
-    setIsOpen(false);
-  };
 
   const matches = (...texts: (string | undefined)[]) =>
     !searching || texts.some((text) => text?.toLowerCase().includes(query));
