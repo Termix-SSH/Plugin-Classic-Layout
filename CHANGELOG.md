@@ -16,6 +16,7 @@
 - A setup step to pick how host rows work, connect buttons, buttons plus a host page button, or only the host page, when a plugin offers a host page
 - The dashboard layout is saved with your account, so it follows you to every browser. A layout saved in this browser moves over on its own
 - A dashboard you never arranged puts Needs attention first, when Operations Center is on
+- Admin setting to stop anyone saving passwords and keys, with a note in the host and credential editors (Termix #1753)
 
 ### Changed
 

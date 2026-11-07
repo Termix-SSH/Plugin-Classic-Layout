@@ -21,6 +21,7 @@ import { Copy, Info, Lock, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { FolderPathPicker } from "./FolderPathPicker";
+import { useHostPolicy } from "./use-host-policy";
 
 export function CredentialEditorView({
   credential,
@@ -64,6 +65,7 @@ export function CredentialEditorView({
     certPublicKey: credential?.certPublicKey ?? "",
   }));
   const { t } = useTranslation();
+  const hostPolicy = useHostPolicy();
   const credFileInputRef = useRef<HTMLInputElement>(null);
   const certFileInputRef = useRef<HTMLInputElement>(null);
   const setCredField = <K extends keyof typeof credForm>(
@@ -194,7 +196,17 @@ export function CredentialEditorView({
   return (
     <EditorPane
       bands={bands}
-      banner={banner}
+      banner={
+        <>
+          {banner}
+          {hostPolicy.credentialStorage === false && (
+            <div className="flex items-start gap-2.5 p-3 border-b border-border text-xs text-muted-foreground">
+              <Lock className="size-3.5 shrink-0 mt-0.5" />
+              <span>{t("admin.credentialStorageOff")}</span>
+            </div>
+          )}
+        </>
+      }
       errorCount={nameMissing ? 1 : 0}
       footer={
         <>
