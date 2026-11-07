@@ -539,8 +539,13 @@ describe("HostItem compact rows", () => {
       "root@10.0.0.5:22, prod, web, all-tags-still-accessible",
     );
     expect(accessibleDetails.classList.contains("sr-only")).toBe(true);
+    // Nothing else to show, so the row stays on one line.
+    expect(screen.queryByTestId("host-details-row")).toBeNull();
     expect(
-      screen.getByTestId("host-details-row").contains(accessibleDetails),
+      screen
+        .getByText(host.name)
+        .closest("[data-drag-label]")!
+        .contains(screen.getByTestId("host-inline-actions")),
     ).toBe(true);
     await userEvent.hover(screen.getByText(host.name));
     const tooltip = await screen.findByRole("tooltip");

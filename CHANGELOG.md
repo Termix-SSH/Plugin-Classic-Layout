@@ -30,6 +30,7 @@
 - A host's status tooltip no longer covers its right click menu
 - The session timeout box in admin settings is as tall as its Save button
 - Recent activity in quick search opens the host you used, not another host with the same or its old name
+- A compact host row with the address and tags turned off fits on one line, with its buttons next to the name
 
 ## 1.1.1
 
