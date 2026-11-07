@@ -28,11 +28,13 @@ Read the [docs](https://docs.termix.site/plugins/classic-layout) to learn how it
 
 - Icon rail with a resizable sidebar and a right dock
 - Tab bar with split view
-- Dashboard, Manage and Settings screens
+- A dashboard of tiles you can move and resize, saved with your account
+- Manage and Settings screens
 - Host and credential lists, and the host editor
+- Pick what a click on a host opens, and which buttons show on its row
+- Host tools can open inside the Operations Center host page
 - Command palette
 - Mobile bottom bar
-- Host list and Dashboard that other plugins can place
 
 <br />
 
