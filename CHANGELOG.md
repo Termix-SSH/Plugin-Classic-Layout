@@ -29,6 +29,7 @@
 - Folder host counts now include sub-hosts, so a folder no longer shows more online hosts than it has
 - A host's status tooltip no longer covers its right click menu
 - The session timeout box in admin settings is as tall as its Save button
+- Recent activity in quick search opens the host you used, not another host with the same or its old name
 
 ## 1.1.1
 
