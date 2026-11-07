@@ -154,7 +154,7 @@ export function AdminGeneralSettingsSection({
               max={720}
               value={sessionTimeout}
               onChange={(e) => setSessionTimeout(e.target.value)}
-              className="w-20 text-sm"
+              className="h-8 w-20 text-sm"
             />
             <span className="text-xs text-muted-foreground">
               {t("admin.hours")}
