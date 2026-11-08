@@ -22,6 +22,7 @@ import {
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { Search } from "lucide-react";
+import { useReducedMotion } from "motion/react";
 import { HIDDEN_ATTR, useSettingsPageFilter } from "../settings/page-filter";
 
 /** True while the editor is searched, so every lazy section mounts. */
@@ -69,6 +70,7 @@ export function useScrollSpy(
   const idsKey = ids.join("|");
   // A jump scrolls past every section between; the spy waits it out.
   const lockUntil = useRef(0);
+  const behavior: ScrollBehavior = useReducedMotion() ? "auto" : "smooth";
 
   useEffect(() => {
     const container = containerRef.current;
@@ -122,7 +124,7 @@ export function useScrollSpy(
         8;
       let lastTop = target();
       let lastHeight = area.scrollHeight;
-      area.scrollTo?.({ top: lastTop, behavior: "smooth" });
+      area.scrollTo?.({ top: lastTop, behavior });
       // Sections above can still be mounting, which moves the target or
       // cuts the scroll short. Follow it until the scroll lands and the
       // layout stops changing, unless the user scrolls first.
@@ -150,7 +152,7 @@ export function useScrollSpy(
           lastTop = top;
           lastHeight = area.scrollHeight;
           changedAt = now;
-          area.scrollTo?.({ top, behavior: "smooth" });
+          area.scrollTo?.({ top, behavior });
         }
         const reachable = Math.min(
           lastTop,

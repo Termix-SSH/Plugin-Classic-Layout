@@ -9,6 +9,12 @@ import {
   waitFor,
 } from "@testing-library/react";
 
+const motion = vi.hoisted(() => ({ reduced: false }));
+vi.mock("motion/react", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useReducedMotion: () => motion.reduced,
+}));
+
 vi.mock("react-i18next", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   const merged: Record<string, unknown> = { ...original };
@@ -145,6 +151,29 @@ describe("EditorPane jump", () => {
 });
 
 describe("useScrollSpy scrollTo", () => {
+  it("jumps without animating when the system asks for reduced motion", () => {
+    motion.reduced = true;
+    const container = document.createElement("div");
+    const section = document.createElement("div");
+    section.dataset.section = "rdp";
+    container.appendChild(section);
+    document.body.appendChild(container);
+    section.getBoundingClientRect = () => ({ top: 300 }) as DOMRect;
+    container.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
+    const behaviors: (ScrollBehavior | undefined)[] = [];
+    container.scrollTo = ((options: ScrollToOptions) => {
+      behaviors.push(options.behavior);
+    }) as typeof container.scrollTo;
+
+    const ref = { current: container };
+    const { result } = renderHook(() => useScrollSpy(ref, ["general", "rdp"]));
+    act(() => result.current.scrollTo("rdp"));
+
+    expect(behaviors).toEqual(["auto"]);
+    motion.reduced = false;
+    container.remove();
+  });
+
   it("follows a section that moves while the form is still mounting", async () => {
     const container = document.createElement("div");
     const section = document.createElement("div");
