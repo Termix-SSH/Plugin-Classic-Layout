@@ -333,6 +333,8 @@ export function ClassicLayout() {
                 onReorderTabs={tabs.reorder}
                 onSplitAction={shell.split.handleAction}
                 onRenameTab={tabs.rename}
+                hosts={hosts.list}
+                onEditHost={hosts.edit}
                 isAppFullscreen={shell.fullscreen.active}
                 onToggleAppFullscreen={shell.fullscreen.toggle}
                 rightDockOpen={right.view !== null}

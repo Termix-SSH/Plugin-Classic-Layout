@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import type { Tab } from "@termix-ssh/plugin-sdk/ui";
+import type { Host, Tab } from "@termix-ssh/plugin-sdk/ui";
 import type { SplitSummary } from "@termix-ssh/plugin-sdk/ui";
 
 vi.mock("react-i18next", async (importOriginal) => {
@@ -226,5 +226,39 @@ describe("bulk reconnect menu", () => {
     fireEvent.click(view.getByText("nav.reconnectDisconnectedTerminals"));
     expect(onReconnectDisconnected).toHaveBeenCalledOnce();
     expect(view.queryByText("nav.reconnectDisconnectedTerminals")).toBeNull();
+  });
+});
+
+describe("TabBar edit host", () => {
+  const host = { id: "7", name: "web-01" } as unknown as Host;
+  const hostTab = { ...tabs[1], host } as Tab;
+
+  function openMenu(overrides: Partial<ComponentProps<typeof TabBar>> = {}) {
+    const onEditHost = vi.fn();
+    const view = render(
+      <TabBar
+        {...props({ tabs: [tabs[0], hostTab], onEditHost, ...overrides })}
+      />,
+    );
+    fireEvent.contextMenu(view.getByText("web-01"));
+    return { ...view, onEditHost };
+  }
+
+  it("opens the saved host's editor from the tab menu", () => {
+    const saved = { ...host, name: "web-01 (renamed)" };
+    const { getByText, onEditHost } = openMenu({ hosts: [saved] });
+    fireEvent.click(getByText("hosts.editHostAction"));
+    expect(onEditHost).toHaveBeenCalledWith(saved);
+  });
+
+  it("hides it when the tab's host is not a saved host", () => {
+    const { queryByText } = openMenu({ hosts: [] });
+    expect(queryByText("hosts.editHostAction")).toBeNull();
+  });
+
+  it("hides it on a shared host the user cannot edit", () => {
+    const shared = { ...host, isShared: true, permissionLevel: "connect" };
+    const { queryByText } = openMenu({ hosts: [shared as Host] });
+    expect(queryByText("hosts.editHostAction")).toBeNull();
   });
 });

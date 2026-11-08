@@ -14,6 +14,7 @@ import {
   tabIcon,
   isSessionTabType,
   isElectron,
+  type Host,
   type Tab,
   type TabType,
   ActionSlot,
@@ -31,6 +32,7 @@ import {
   moveSplitDrag,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
+import { canOpenHostEditor } from "../sidebar/host-permissions";
 
 /** Plugins add buttons to the right of the tab bar here, beside split view. */
 export const TAB_BAR_ACTIONS_SLOT = "tabbar.actions";
@@ -43,6 +45,7 @@ import {
   X,
   Plus,
   Pencil,
+  SquarePen,
   Columns2,
   Rows2,
   Ungroup,
@@ -74,6 +77,8 @@ export function TabBar({
   onReorderTabs,
   onSplitAction,
   onRenameTab,
+  hosts,
+  onEditHost,
   isAppFullscreen,
   onToggleAppFullscreen,
   rightDockOpen,
@@ -94,6 +99,9 @@ export function TabBar({
   onReorderTabs: (tabs: Tab[]) => void;
   onSplitAction: (action: TabSplitAction) => void;
   onRenameTab?: (tabId: string, newLabel: string) => void;
+  /** Saved hosts, so a tab offers Edit host only while its host still exists. */
+  hosts?: Host[];
+  onEditHost?: (host: Host) => void;
   isAppFullscreen: boolean;
   onToggleAppFullscreen: () => void;
   rightDockOpen?: boolean;
@@ -731,6 +739,9 @@ export function TabBar({
           const ctxTab = tabs.find((t) => t.id === contextTabId);
           if (!ctxTab) return null;
           const joinable = canJoinSplit(ctxTab);
+          const savedHost = hosts?.find((h) => h.id === ctxTab.host?.id);
+          const editableHost =
+            savedHost && canOpenHostEditor(savedHost) ? savedHost : undefined;
           const itemClass =
             "flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:pointer-events-none";
           const runSplit = (action: TabSplitAction) => {
@@ -777,6 +788,18 @@ export function TabBar({
                 >
                   <RefreshCw className="size-3" />
                   {t("nav.reconnectDisconnectedTerminals")}
+                </button>
+              )}
+              {editableHost && onEditHost && (
+                <button
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-accent hover:text-accent-foreground"
+                  onClick={() => {
+                    onEditHost(editableHost);
+                    setContextTabId(null);
+                  }}
+                >
+                  <SquarePen className="size-3" />
+                  {t("hosts.editHostAction")}
                 </button>
               )}
               {/* Plugins add entries here, invoked with the tab's surface handle. */}
