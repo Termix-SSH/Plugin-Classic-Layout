@@ -119,7 +119,8 @@ export function AccordionSection({
     return (
       <div
         id={`${id}-content`}
-        className="flex flex-col border border-border bg-card px-3 pb-3"
+        data-tile-card=""
+        className="flex flex-col border border-border px-3 pb-3"
       >
         {children}
       </div>
@@ -127,7 +128,7 @@ export function AccordionSection({
   }
 
   return (
-    <div className="border border-border bg-card overflow-hidden">
+    <div data-tile-card="" className="border border-border overflow-hidden">
       <button
         onClick={onToggle}
         aria-expanded={open}
@@ -366,6 +367,13 @@ function PasswordChangeSection({
             className="pr-9 text-sm"
           />
           <button
+            type="button"
+            title={
+              showPassword ? t("common.hidePassword") : t("common.showPassword")
+            }
+            aria-label={
+              showPassword ? t("common.hidePassword") : t("common.showPassword")
+            }
             onClick={() => setShowPassword((o) => !o)}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
@@ -700,6 +708,7 @@ export function UserProfilePanel({
         // Layout/view keys that were never snapshotted, so switching to cloud
         // and back silently reset them.
         "dashboardTab.slots",
+        "dashboardTab.grid",
         "dashboardTab.mainWidthPct",
       ];
       const snap: Record<string, string | null> = { __theme: theme };
@@ -994,6 +1003,7 @@ export function UserProfilePanel({
   }
 
   async function handleDeleteAccount() {
+    if (deleteLoading) return;
     if (!deletePassword.trim()) {
       toast.error(t("newUi.sidebar.userProfile.deletePasswordRequired"));
       return;
@@ -1095,7 +1105,7 @@ export function UserProfilePanel({
         } else {
           toast.error(
             t("newUi.sidebar.userProfile.importFailed", {
-              error: result.summary?.errors?.join(", ") || "Unknown error",
+              error: result.summary?.errors?.join(", ") || t("common.unknown"),
             }),
           );
         }
@@ -1103,14 +1113,14 @@ export function UserProfilePanel({
         const err = await response.json().catch(() => ({}));
         toast.error(
           t("newUi.sidebar.userProfile.importFailed", {
-            error: err.error || "Unknown error",
+            error: err.error || t("common.unknown"),
           }),
         );
       }
     } catch {
       toast.error(
         t("newUi.sidebar.userProfile.importFailed", {
-          error: "Unknown error",
+          error: t("common.unknown"),
         }),
       );
     } finally {
@@ -1127,7 +1137,7 @@ export function UserProfilePanel({
     <div
       className={
         section
-          ? "flex w-full flex-col gap-2"
+          ? "flex w-full flex-col"
           : "mx-auto flex w-full max-w-5xl flex-col gap-2 p-3"
       }
     >
@@ -1142,7 +1152,10 @@ export function UserProfilePanel({
           connected; with no sync there's nowhere for "cloud" to sync to,
           so this stays forced to local storage and hidden. */}
       {(!isElectron() || isLinked) && shows("data") && (
-        <div className="border border-border bg-card px-3 py-2.5 flex flex-col gap-2">
+        <div
+          data-tile-card=""
+          className="border border-border px-3 py-2.5 flex flex-col gap-2"
+        >
           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {t("newUi.sidebar.userProfile.storageModeSwitch")}
           </span>
@@ -1575,7 +1588,7 @@ export function UserProfilePanel({
                 className="h-6 text-[11px] font-mono border-0 bg-transparent p-0 focus-visible:ring-0 flex-1 min-w-0"
               />
               <span className="text-[10px] text-muted-foreground shrink-0">
-                hex
+                {t("newUi.sidebar.userProfile.hexLabel")}
               </span>
             </div>
           </div>
@@ -1861,6 +1874,8 @@ export function UserProfilePanel({
                       variant="ghost"
                       size="icon"
                       className="size-6 text-muted-foreground hover:text-destructive"
+                      title={t("admin.revokeKey")}
+                      aria-label={t("admin.revokeKey")}
                       onClick={async () => {
                         const ok = await confirm({
                           title: t("admin.revokeKeyConfirm", {

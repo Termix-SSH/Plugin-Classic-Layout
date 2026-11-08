@@ -23,6 +23,7 @@ import {
   SettingsFieldRow,
   hasVisibleFields,
   isFieldShown,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { Loader2 } from "lucide-react";
@@ -168,12 +169,7 @@ export function FeatureSettingsForm({
   }, [fields]);
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
-        <Loader2 className="size-3.5 animate-spin" />
-        {t("common.loading")}
-      </div>
-    );
+    return <LoadingState compact label={t("common.loading")} />;
   }
 
   const rows = (group: PluginSettingsField[]) =>
@@ -194,9 +190,9 @@ export function FeatureSettingsForm({
   const icon = <PluginIcon name={plugin.icon} className="size-3.5" />;
 
   return (
-    <div className="flex flex-col gap-2 pt-2">
+    <div className="flex flex-col">
       {!running && (
-        <div className="border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+        <div className="border-b border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
           {t("settings.featureUnavailable", {
             name: pluginName(t, plugin),
           })}
@@ -213,11 +209,13 @@ export function FeatureSettingsForm({
             {rows(group.fields)}
           </SectionCard>
         ) : (
-          <div key={`group-${index}`}>{rows(group.fields)}</div>
+          <div key={`group-${index}`} data-tile-card="" className="px-3 py-1">
+            {rows(group.fields)}
+          </div>
         ),
       )}
 
-      <div className="flex justify-end">
+      <div data-tile-card="" className="flex justify-end px-3 py-2">
         <Button
           variant="outline"
           size="sm"

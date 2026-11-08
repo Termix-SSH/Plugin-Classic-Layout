@@ -22,6 +22,17 @@ const hidden = (root: HTMLElement, id: string) =>
   root.querySelector(`#${id}`)!.hasAttribute(HIDDEN_ATTR);
 
 describe("filterSettingsPage", () => {
+  it("treats tile cards as blocks", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <div data-tile-card="" id="a"><span>Theme</span></div>
+      <div data-tile-card="" id="b"><span>Account</span></div>
+    `;
+    expect(filterSettingsPage(root, "theme")).toBe(1);
+    expect(hidden(root, "a")).toBe(false);
+    expect(hidden(root, "b")).toBe(true);
+  });
+
   it("keeps only matching cards and rows", () => {
     const root = page();
     expect(filterSettingsPage(root, "font")).toBe(1);

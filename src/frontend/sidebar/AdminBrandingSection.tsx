@@ -3,9 +3,11 @@ import {
   Button,
   Input,
   type BrandingSettings,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { PaintbrushIcon } from "lucide-react";
+import { toast } from "sonner";
 import { AccordionSection } from "./AdminSettingsShared";
 import {
   BRANDING_LOGO_ACCEPT,
@@ -37,7 +39,7 @@ export function AdminBrandingSection({
     event.target.value = "";
     if (!file || !settings) return;
     if (!isAcceptedBrandingLogoFile(file)) {
-      alert(t("admin.brandingLogoInvalid"));
+      toast.error(t("admin.brandingLogoInvalid"));
       return;
     }
     const reader = new FileReader();
@@ -57,9 +59,7 @@ export function AdminBrandingSection({
       onToggle={onToggle}
     >
       {settings === null ? (
-        <div className="pt-3 text-xs text-muted-foreground">
-          {t("common.loading")}
-        </div>
+        <LoadingState label={t("common.loading")} />
       ) : (
         <div className="@container flex flex-col gap-0 pt-2">
           <div className="grid grid-cols-1 gap-x-4 gap-y-3 py-3 @md:grid-cols-2 border-b border-border">

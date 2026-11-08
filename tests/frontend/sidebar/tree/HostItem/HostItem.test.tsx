@@ -13,14 +13,23 @@ import type { Host } from "@termix-ssh/plugin-sdk/ui";
 import { registerHostAction } from "@termix-ssh/plugin-sdk/testing-host";
 import { LOCAL_ADAPTIVE_PREFERENCES_KEY } from "@termix-ssh/plugin-sdk/testing-host";
 
-const { markTabSurfaceUsedMock, preloadTabSurfaceMock, hostBadgesMock } =
-  vi.hoisted(() => ({
-    markTabSurfaceUsedMock: vi.fn(),
-    preloadTabSurfaceMock: vi.fn(),
-    hostBadgesMock: vi.fn<
-      () => ReturnType<typeof import("@termix-ssh/plugin-sdk/ui").useHostBadges>
-    >(() => []),
-  }));
+const {
+  markTabSurfaceUsedMock,
+  preloadTabSurfaceMock,
+  hostBadgesMock,
+  uiPrefsMock,
+  invokeActionMock,
+} = vi.hoisted(() => ({
+  uiPrefsMock: vi.fn<() => Record<string, unknown>>(() => ({})),
+  invokeActionMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(
+    async () => undefined,
+  ),
+  markTabSurfaceUsedMock: vi.fn(),
+  preloadTabSurfaceMock: vi.fn(),
+  hostBadgesMock: vi.fn<
+    () => ReturnType<typeof import("@termix-ssh/plugin-sdk/ui").useHostBadges>
+  >(() => []),
+}));
 
 vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -84,6 +93,8 @@ vi.mock("@termix-ssh/plugin-sdk/frontend", async (importOriginal) => {
   > = [
     () => ({
       useTranslation: () => ({ t: (key: string) => key }),
+      usePluginUiPreferences: () => ({ values: uiPrefsMock(), set: () => {} }),
+      invokeAction: invokeActionMock,
     }),
   ];
   for (const factory of factories) {
@@ -99,6 +110,7 @@ import {
   HostItem,
   formatHostAddress,
 } from "../../../../../src/frontend/sidebar/tree/HostItem/HostItem";
+import { setHostRows } from "../../../../../src/frontend/sidebar/tree/host-bar-actions";
 import { defaultHostRowFields } from "@termix-ssh/plugin-sdk/ui";
 
 const baseHost: Host = {
@@ -151,7 +163,10 @@ afterEach(() => {
   markTabSurfaceUsedMock.mockClear();
   preloadTabSurfaceMock.mockClear();
   hostBadgesMock.mockReset().mockReturnValue([]);
+  uiPrefsMock.mockReset().mockReturnValue({});
+  invokeActionMock.mockReset().mockResolvedValue(undefined);
   localStorage.removeItem(LOCAL_ADAPTIVE_PREFERENCES_KEY);
+  setHostRows({});
 });
 
 describe("HostItem density parity", () => {
@@ -164,11 +179,12 @@ describe("HostItem density parity", () => {
   );
 
   it.each(["comfortable", "compact"] as const)(
-    "exposes the Copy Link submenu trigger in %s density",
+    "hides an empty Copy Link submenu in %s density",
     (density) => {
       renderHostItem(density, { menuOpen: true });
       expect(screen.getByText("common.connect")).toBeTruthy();
-      expect(screen.getByText("hosts.copyLink")).toBeTruthy();
+      // No plugin offers a link to copy here, so the submenu is left out.
+      expect(screen.queryByText("hosts.copyLink")).toBeNull();
     },
   );
 
@@ -524,8 +540,13 @@ describe("HostItem compact rows", () => {
       "root@10.0.0.5:22, prod, web, all-tags-still-accessible",
     );
     expect(accessibleDetails.classList.contains("sr-only")).toBe(true);
+    // Nothing else to show, so the row stays on one line.
+    expect(screen.queryByTestId("host-details-row")).toBeNull();
     expect(
-      screen.getByTestId("host-details-row").contains(accessibleDetails),
+      screen
+        .getByText(host.name)
+        .closest("[data-drag-label]")!
+        .contains(screen.getByTestId("host-inline-actions")),
     ).toBe(true);
     await userEvent.hover(screen.getByText(host.name));
     const tooltip = await screen.findByRole("tooltip");
@@ -714,4 +735,141 @@ it("uses the enabled protocol username for non-SSH hosts", () => {
   } finally {
     dispose();
   }
+});
+
+describe("HostItem host page tools", () => {
+  const Icon = (() => null) as never;
+  function withTools(run: () => Promise<void> | void) {
+    const disposers = [
+      registerHostAction({
+        id: "host-page",
+        titleKey: "fixture.hostPage",
+        icon: Icon,
+        kind: "open",
+        tabType: "host",
+        when: () => true,
+      }),
+      registerHostAction({
+        id: "docker",
+        titleKey: "fixture.docker",
+        icon: Icon,
+        kind: "open",
+        tabType: "docker",
+        when: () => true,
+      }),
+    ];
+    return Promise.resolve(run()).finally(() =>
+      disposers.forEach((dispose) => dispose()),
+    );
+  }
+
+  function renderRow(onOpenTab: (...args: unknown[]) => void) {
+    render(
+      <HostItem
+        host={baseHost}
+        onOpenTab={onOpenTab}
+        onDelete={noop}
+        onDuplicate={noop}
+      />,
+    );
+  }
+
+  it("keeps tool buttons and opens them in their own tab by default", () =>
+    withTools(() => {
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByTitle("fixture.docker"));
+      expect(onOpenTab).toHaveBeenCalledWith("docker", expect.anything());
+      expect(invokeActionMock).not.toHaveBeenCalled();
+    }));
+
+  it("opens tools inside the host page when chosen", () =>
+    withTools(async () => {
+      uiPrefsMock.mockReturnValue({ hostTools: "page" });
+      invokeActionMock.mockResolvedValue(true);
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByTitle("fixture.docker"));
+      await act(async () => {});
+      expect(invokeActionMock).toHaveBeenCalledWith(
+        "host-page.open",
+        baseHost,
+        "docker",
+      );
+      expect(onOpenTab).not.toHaveBeenCalled();
+    }));
+
+  it("drops row buttons and opens the host page on click in host page only mode", () =>
+    withTools(async () => {
+      uiPrefsMock.mockReturnValue({ hostTools: "only" });
+      invokeActionMock.mockResolvedValue(true);
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      expect(screen.queryByTitle("fixture.docker")).toBeNull();
+      expect(screen.queryByTitle("fixture.hostPage")).toBeNull();
+      fireEvent.click(screen.getByText("web-01"));
+      await act(async () => {});
+      expect(invokeActionMock).toHaveBeenCalledWith(
+        "host-page.open",
+        baseHost,
+        "overview",
+      );
+      expect(onOpenTab).not.toHaveBeenCalled();
+    }));
+
+  it("runs the default click pick", () =>
+    withTools(() => {
+      uiPrefsMock.mockReturnValue({ clickAction: "docker" });
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByText("web-01"));
+      expect(onOpenTab).toHaveBeenCalledWith("docker", expect.anything());
+    }));
+
+  it("lets one host's click pick beat the default", () =>
+    withTools(() => {
+      uiPrefsMock.mockReturnValue({ clickAction: "docker" });
+      setHostRows({ "1": { click: "host-page" } });
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByText("web-01"));
+      expect(onOpenTab).toHaveBeenCalledWith("host", expect.anything());
+    }));
+
+  it("hides a row button on one host only", () =>
+    withTools(() => {
+      setHostRows({ "1": { bar: { docker: false } } });
+      renderRow(vi.fn());
+      expect(screen.queryByTitle("fixture.docker")).toBeNull();
+      expect(screen.getByTitle("fixture.hostPage")).toBeTruthy();
+    }));
+
+  it("ignores host page only mode when no plugin offers a host page", () => {
+    uiPrefsMock.mockReturnValue({ hostTools: "only" });
+    const Icon = (() => null) as never;
+    const dispose = registerHostAction({
+      id: "docker",
+      titleKey: "fixture.docker",
+      icon: Icon,
+      kind: "open",
+      tabType: "docker",
+      when: () => true,
+    });
+    try {
+      renderRow(vi.fn());
+      expect(screen.getByTitle("fixture.docker")).toBeTruthy();
+    } finally {
+      dispose();
+    }
+  });
+
+  it("falls back to a tab when no host page answers", () =>
+    withTools(async () => {
+      uiPrefsMock.mockReturnValue({ hostTools: "page" });
+      const onOpenTab = vi.fn();
+      renderRow(onOpenTab);
+      fireEvent.click(screen.getByTitle("fixture.docker"));
+      await act(async () => {});
+      expect(onOpenTab).toHaveBeenCalledWith("docker", expect.anything());
+    }));
 });

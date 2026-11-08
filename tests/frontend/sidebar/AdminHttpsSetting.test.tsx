@@ -33,7 +33,7 @@ describe("AdminHttpsSetting", () => {
     });
     render(<AdminHttpsSetting />);
     expect(await screen.findByText("admin.forceHttps")).toBeTruthy();
-    const toggle = await screen.findByRole("button");
+    const toggle = await screen.findByRole("switch");
     await vi.waitFor(() =>
       expect((toggle as HTMLButtonElement).disabled).toBe(false),
     );

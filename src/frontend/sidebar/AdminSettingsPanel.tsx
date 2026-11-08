@@ -26,7 +26,9 @@ import {
   updateLogLevel,
   getExternalAutoProvision,
   updateExternalAutoProvision,
+  getCredentialStorage,
   getSecondFactorAfterExternalLogin,
+  updateCredentialStorage,
   updateSecondFactorAfterExternalLogin,
   isElectron,
   getUserRoles,
@@ -44,7 +46,7 @@ import {
   getDatabaseTransferUrl,
 } from "@termix-ssh/plugin-sdk/ui";
 import { usePluginApi, useTranslation } from "@termix-ssh/plugin-sdk/frontend";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FeatureSettingsSection,
   featureSectionId,
@@ -124,6 +126,7 @@ export function AdminSettingsPanel({
 
   // External login state
   const [externalAutoProvision, setExternalAutoProvision] = useState(false);
+  const [credentialStorage, setCredentialStorage] = useState(true);
   const [secondFactorAfterExternalLogin, setSecondFactorAfterExternalLogin] =
     useState(false);
 
@@ -168,6 +171,7 @@ export function AdminSettingsPanel({
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyUserId, setNewKeyUserId] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
+  const [newKeyScope, setNewKeyScope] = useState("");
   const [newKeyLoading, setNewKeyLoading] = useState(false);
   const [createdKeyToken, setCreatedKeyToken] = useState<string | null>(null);
 
@@ -185,6 +189,7 @@ export function AdminSettingsPanel({
   const [userSearch, setUserSearch] = useState("");
   const [userPage, setUserPage] = useState(0);
   const [userTotal, setUserTotal] = useState(0);
+  const usersRequestRef = useRef(0);
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -232,12 +237,15 @@ export function AdminSettingsPanel({
   function loadUsers() {
     // Paged server-side so an install with thousands of accounts does not
     // ship the whole directory to render one screen of it.
+    const request = ++usersRequestRef.current;
     getUserList({
       search: userSearch.trim() || undefined,
       limit: USERS_PAGE_SIZE,
       offset: userPage * USERS_PAGE_SIZE,
     })
       .then(({ users: u, total }) => {
+        // A slower answer for an older search must not replace a newer one.
+        if (request !== usersRequestRef.current) return;
         setUsers(
           u.map((user) => ({
             id: user.userId,
@@ -282,6 +290,7 @@ export function AdminSettingsPanel({
         level,
         oidcProv,
         secondFactorExternal,
+        credentialStorageSetting,
         notificationEndpoints,
         branding,
       ] = await Promise.allSettled([
@@ -292,6 +301,7 @@ export function AdminSettingsPanel({
         getLogLevel(),
         getExternalAutoProvision(),
         getSecondFactorAfterExternalLogin(),
+        getCredentialStorage(),
         getNotificationPrivateEndpoints(),
         getBranding(),
       ]);
@@ -308,6 +318,8 @@ export function AdminSettingsPanel({
         setExternalAutoProvision(oidcProv.value.enabled);
       if (secondFactorExternal.status === "fulfilled")
         setSecondFactorAfterExternalLogin(secondFactorExternal.value.enabled);
+      if (credentialStorageSetting.status === "fulfilled")
+        setCredentialStorage(credentialStorageSetting.value.enabled);
       if (pwReset.status === "fulfilled") setAllowPasswordReset(pwReset.value);
       if (timeout.status === "fulfilled")
         setSessionTimeout(String(timeout.value.timeoutHours));
@@ -368,6 +380,17 @@ export function AdminSettingsPanel({
     } catch {
       setExternalAutoProvision(!newVal);
       toast.error(t("admin.updateExternalAutoProvisionFailed"));
+    }
+  }
+
+  async function handleToggleCredentialStorage() {
+    const newVal = !credentialStorage;
+    setCredentialStorage(newVal);
+    try {
+      await updateCredentialStorage(newVal);
+    } catch {
+      setCredentialStorage(!newVal);
+      toast.error(t("admin.updateCredentialStorageFailed"));
     }
   }
 
@@ -621,12 +644,14 @@ export function AdminSettingsPanel({
         newKeyName.trim(),
         newKeyUserId.trim(),
         newKeyExpiry ? new Date(newKeyExpiry).toISOString() : undefined,
+        newKeyScope ? [newKeyScope] : null,
       );
       setApiKeys((prev) => [{ ...created, isActive: true }, ...prev]);
       setCreatedKeyToken(created.token);
       setNewKeyName("");
       setNewKeyUserId("");
       setNewKeyExpiry("");
+      setNewKeyScope("");
       toast.success(t("admin.apiKeyCreatedSuccess", { name: created.name }));
     } catch (e: unknown) {
       toast.error(apiErrorMessage(e, t("admin.apiKeyCreateFailed")));
@@ -716,7 +741,8 @@ export function AdminSettingsPanel({
         } else {
           toast.error(
             t("admin.importFailed", {
-              error: result.summary?.errors?.join(", ") || "Unknown error",
+              error:
+                result.summary?.errors?.join(", ") || t("admin.unknownError"),
             }),
           );
         }
@@ -761,7 +787,7 @@ export function AdminSettingsPanel({
     <div
       className={
         section
-          ? "flex w-full flex-col gap-2"
+          ? "flex w-full flex-col"
           : "mx-auto flex w-full max-w-5xl flex-col gap-2 p-3 flex-1 min-h-0 overflow-y-auto"
       }
     >
@@ -779,6 +805,8 @@ export function AdminSettingsPanel({
         handleTogglePasswordLogin={handleTogglePasswordLogin}
         externalAutoProvision={externalAutoProvision}
         handleToggleExternalAutoProvision={handleToggleExternalAutoProvision}
+        credentialStorage={credentialStorage}
+        handleToggleCredentialStorage={handleToggleCredentialStorage}
         secondFactorAfterExternalLogin={secondFactorAfterExternalLogin}
         handleToggleSecondFactorAfterExternalLogin={
           handleToggleSecondFactorAfterExternalLogin
@@ -892,6 +920,8 @@ export function AdminSettingsPanel({
         newKeyUserId={newKeyUserId}
         setNewKeyUserId={setNewKeyUserId}
         newKeyExpiry={newKeyExpiry}
+        newKeyScope={newKeyScope}
+        setNewKeyScope={setNewKeyScope}
         setNewKeyExpiry={setNewKeyExpiry}
         users={users}
         handleCreateApiKey={handleCreateApiKey}

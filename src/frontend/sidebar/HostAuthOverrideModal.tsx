@@ -4,18 +4,23 @@ import {
   InlineView,
   getCredentials,
   getHostAuthOverride,
+  getHostDeviceAuth,
+  isElectron,
   setHostAuthOverride,
+  setHostDeviceAuth,
   type Credential,
   type Host,
   SSH_AUTH_PROTOCOL,
   type AuthOverrideProtocol,
   mapCredentials,
   getConnectedRemoteApi,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { authProtocolLabel } from "./host-permissions";
+import { DeviceLoginField, useDeviceLogin } from "./DeviceLoginField";
 
 export function HostAuthOverrideModal({
   open,
@@ -45,6 +50,12 @@ export function HostAuthOverrideModal({
   // A shared host's copy on a linked desktop: its override lives on the
   // server, against the server's own credentials.
   const sharedCopySyncId = host.sharedCopy ? (host.syncId ?? null) : null;
+  const deviceLogin = useDeviceLogin(
+    open && !!host.sharedCopy && isElectron(),
+    () => getHostDeviceAuth(Number(host.id), protocol),
+    (credentialId) =>
+      setHostDeviceAuth(Number(host.id), protocol, credentialId),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -89,21 +100,28 @@ export function HostAuthOverrideModal({
   const handleSave = async () => {
     setSaving(true);
     try {
+      if (deviceLogin.dirty) {
+        await deviceLogin.save();
+      }
       const credentialId = selectedId ? Number(selectedId) : null;
-      await setHostAuthOverride(
-        Number(host.id),
-        protocol,
-        credentialId,
-        sharedCopySyncId,
-      );
+      if (selectedId !== initialId) {
+        await setHostAuthOverride(
+          Number(host.id),
+          protocol,
+          credentialId,
+          sharedCopySyncId,
+        );
+      }
       toast.success(
-        credentialId === null
-          ? t(
-              ownerAuthShared
-                ? "hosts.sharing.authOverrideClearedToShared"
-                : "hosts.sharing.authOverrideCleared",
-            )
-          : t("hosts.sharing.authOverrideSaved"),
+        selectedId === initialId
+          ? t("sharing.deviceLogin.saved")
+          : credentialId === null
+            ? t(
+                ownerAuthShared
+                  ? "hosts.sharing.authOverrideClearedToShared"
+                  : "hosts.sharing.authOverrideCleared",
+              )
+            : t("hosts.sharing.authOverrideSaved"),
       );
       window.dispatchEvent(new CustomEvent("termix:hosts-changed"));
       onOpenChange(false);
@@ -134,7 +152,11 @@ export function HostAuthOverrideModal({
             onCancel={() => onOpenChange(false)}
             onSave={() => void handleSave()}
             saving={saving}
-            disabled={loading || loadError || selectedId === initialId}
+            disabled={
+              loading ||
+              (selectedId === initialId && !deviceLogin.dirty) ||
+              (loadError && selectedId !== initialId)
+            }
           />
         }
       >
@@ -147,9 +169,7 @@ export function HostAuthOverrideModal({
           )}
         </p>
         {loading ? (
-          <p className="py-4 text-center text-muted-foreground">
-            {t("common.loading")}
-          </p>
+          <LoadingState label={t("common.loading")} />
         ) : loadError ? (
           <p className="border border-destructive/30 bg-destructive/5 p-3 text-destructive">
             {t("hosts.sharing.authOverrideLoadError")}
@@ -203,6 +223,7 @@ export function HostAuthOverrideModal({
             </p>
           </div>
         )}
+        <DeviceLoginField id={`device-login-${host.id}`} login={deviceLogin} />
       </InlineView>
     </span>
   );

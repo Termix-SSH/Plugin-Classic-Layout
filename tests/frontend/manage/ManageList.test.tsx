@@ -94,6 +94,25 @@ describe("ManageList", () => {
     expect(props.onAdd).toHaveBeenCalled();
   });
 
+  it("opens folders that appear after the list loads", () => {
+    const props = {
+      editing: false,
+      mode: "hosts" as const,
+      onMode: vi.fn(),
+      credentials,
+      canEditInstanceDefaults: false,
+      isOnline: () => false,
+      selectedKey: null,
+      onPickHost: vi.fn(),
+      onPickCredential: vi.fn(),
+      onPickDefaults: vi.fn(),
+      onAdd: vi.fn(),
+    };
+    const { rerender } = render(<ManageList {...props} hosts={[]} />);
+    rerender(<ManageList {...props} hosts={hosts} />);
+    expect(screen.getByText("web-01")).toBeTruthy();
+  });
+
   it("lists levels of defaults", () => {
     const props = renderList({ mode: "defaults" });
     fireEvent.click(screen.getByText("hostDefaults.titleUser"));

@@ -25,6 +25,8 @@ type GeneralSettingsSectionProps = {
   handleTogglePasswordLogin: () => void;
   externalAutoProvision: boolean;
   handleToggleExternalAutoProvision: () => void;
+  credentialStorage: boolean;
+  handleToggleCredentialStorage: () => void;
   secondFactorAfterExternalLogin: boolean;
   handleToggleSecondFactorAfterExternalLogin: () => void;
   allowPasswordReset: boolean;
@@ -50,6 +52,8 @@ export function AdminGeneralSettingsSection({
   handleToggleExternalAutoProvision,
   secondFactorAfterExternalLogin,
   handleToggleSecondFactorAfterExternalLogin,
+  credentialStorage,
+  handleToggleCredentialStorage,
   allowPasswordReset,
   handleTogglePasswordReset,
   sessionTimeout,
@@ -76,6 +80,9 @@ export function AdminGeneralSettingsSection({
             {t("admin.notificationPrivateEndpointsDesc")}
           </span>
           <Input
+            // The list loads after the first render; remount so the box shows
+            // it instead of staying empty and saving "" on blur.
+            key={notificationPrivateEndpoints.join(",")}
             className="rounded-none"
             defaultValue={notificationPrivateEndpoints.join(", ")}
             placeholder="ntfy.internal, 192.168.1.20"
@@ -133,6 +140,15 @@ export function AdminGeneralSettingsSection({
           />
         </SettingRow>
         <SettingRow
+          label={t("admin.credentialStorage")}
+          description={t("admin.credentialStorageDesc")}
+        >
+          <AdminToggle
+            on={credentialStorage}
+            onToggle={handleToggleCredentialStorage}
+          />
+        </SettingRow>
+        <SettingRow
           label={t("admin.allowPasswordReset")}
           description={t("admin.allowPasswordResetDesc")}
         >
@@ -154,15 +170,14 @@ export function AdminGeneralSettingsSection({
               max={720}
               value={sessionTimeout}
               onChange={(e) => setSessionTimeout(e.target.value)}
-              className="w-20 text-sm"
+              className="h-8 w-20 text-sm"
             />
             <span className="text-xs text-muted-foreground">
               {t("admin.hours")}
             </span>
             <Button
               variant="outline"
-              size="sm"
-              className="text-xs border-accent-brand/40 text-accent-brand hover:bg-accent-brand/10 hover:text-accent-brand h-7"
+              className="text-xs border-accent-brand/40 text-accent-brand hover:bg-accent-brand/10 hover:text-accent-brand"
               onClick={handleSaveSessionTimeout}
             >
               {t("common.save")}
@@ -395,7 +410,7 @@ export function AdminSSLSection({
           <DocsLink core="https">{t("admin.sslDocsLink")}</DocsLink>
         </span>
 
-        <div className="flex flex-col gap-0.5 p-2 border border-border bg-background/50">
+        <div className="flex flex-col gap-0.5 py-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
               {t("admin.sslCertStatus")}
@@ -453,7 +468,7 @@ export function AdminSSLSection({
             onChange={(e) => setManualCertDraft(e.target.value)}
             placeholder={t("admin.sslManualCertPlaceholder")}
             spellCheck={false}
-            className="w-full px-2 py-1.5 text-[10px] font-mono bg-background border border-border text-foreground placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-ring"
+            className="w-full px-2 py-1.5 text-[10px] font-mono bg-popover border border-border text-foreground placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
 
@@ -467,7 +482,7 @@ export function AdminSSLSection({
             onChange={(e) => setManualKeyDraft(e.target.value)}
             placeholder={t("admin.sslManualKeyPlaceholder")}
             spellCheck={false}
-            className="w-full px-2 py-1.5 text-[10px] font-mono bg-background border border-border text-foreground placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-ring"
+            className="w-full px-2 py-1.5 text-[10px] font-mono bg-popover border border-border text-foreground placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-ring"
           />
           <span className="text-[10px] text-muted-foreground">
             {t("admin.sslManualDesc")}

@@ -14,6 +14,7 @@ import {
   GroupHeading,
   Button,
   Input,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useEffect, useMemo, useState } from "react";
@@ -188,11 +189,17 @@ export function KeybindingsSettings() {
         meta: e.metaKey,
       };
       setRecordedCombo(combo);
-      setRecording(false);
-      inputEl.removeEventListener("keydown", handler, true);
+      stop();
       inputEl.blur();
     };
+    // Leaving the field without a key stops recording too.
+    const stop = () => {
+      setRecording(false);
+      inputEl.removeEventListener("keydown", handler, true);
+      inputEl.removeEventListener("blur", stop);
+    };
     inputEl.addEventListener("keydown", handler, true);
+    inputEl.addEventListener("blur", stop);
   }
 
   function handleSave() {
@@ -240,14 +247,15 @@ export function KeybindingsSettings() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 border border-border bg-card p-3">
-        <p className="text-xs text-muted-foreground">
+      <div data-tile-card="" className="flex flex-col">
+        <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
           {t("newUi.sidebar.keybindings.description")}
         </p>
         {defaults.length > 0 && (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col divide-y divide-border border-b border-border">
             <GroupHeading
               title={t("newUi.sidebar.keybindings.defaultsHeading")}
+              className="px-3 py-2"
             />
             {defaults.map((def) => {
               const override = bindings.find(
@@ -256,7 +264,7 @@ export function KeybindingsSettings() {
               return (
                 <div
                   key={def.id}
-                  className="flex items-center justify-between gap-2 border border-border bg-background px-2.5 py-2"
+                  className="flex items-center justify-between gap-2 px-3 py-2"
                 >
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-mono">
@@ -279,6 +287,8 @@ export function KeybindingsSettings() {
                           size="icon"
                           className="size-7"
                           onClick={() => openEditForm(override)}
+                          title={t("common.edit")}
+                          aria-label={t("common.edit")}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
@@ -288,6 +298,9 @@ export function KeybindingsSettings() {
                           className="size-7 text-muted-foreground hover:text-destructive"
                           onClick={() => void handleDelete(override.id)}
                           title={t("newUi.sidebar.keybindings.resetToDefault")}
+                          aria-label={t(
+                            "newUi.sidebar.keybindings.resetToDefault",
+                          )}
                         >
                           <RotateCcw className="size-3.5" />
                         </Button>
@@ -305,6 +318,7 @@ export function KeybindingsSettings() {
                             openOverrideDefaultForm(def.id, def.combo)
                           }
                           title={t("newUi.sidebar.keybindings.customize")}
+                          aria-label={t("newUi.sidebar.keybindings.customize")}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
@@ -317,9 +331,10 @@ export function KeybindingsSettings() {
           </div>
         )}
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col divide-y divide-border border-b border-border">
           <GroupHeading
             title={t("newUi.sidebar.keybindings.customHeading")}
+            className="px-3 py-2"
             action={
               <Button variant="outline" size="sm" onClick={openAddForm}>
                 <Plus className="size-3.5 mr-1" />
@@ -328,11 +343,9 @@ export function KeybindingsSettings() {
             }
           />
           {loading ? (
-            <span className="text-xs text-muted-foreground">
-              {t("newUi.sidebar.keybindings.loading")}
-            </span>
+            <LoadingState label={t("newUi.sidebar.keybindings.loading")} />
           ) : customOnlyBindings.length === 0 ? (
-            <span className="text-xs text-muted-foreground/60">
+            <span className="px-3 py-2 text-xs text-muted-foreground/60">
               {t("newUi.sidebar.keybindings.noCustomBindings")}
             </span>
           ) : (
@@ -341,7 +354,7 @@ export function KeybindingsSettings() {
               return (
                 <div
                   key={kb.id}
-                  className="flex items-center justify-between gap-2 border border-border bg-background px-2.5 py-2"
+                  className="flex items-center justify-between gap-2 px-3 py-2"
                 >
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-mono">
@@ -363,6 +376,8 @@ export function KeybindingsSettings() {
                       size="icon"
                       className="size-7"
                       onClick={() => openEditForm(kb)}
+                      title={t("common.edit")}
+                      aria-label={t("common.edit")}
                     >
                       <Pencil className="size-3.5" />
                     </Button>
@@ -371,6 +386,8 @@ export function KeybindingsSettings() {
                       size="icon"
                       className="size-7 text-muted-foreground hover:text-destructive"
                       onClick={() => void handleDelete(kb.id)}
+                      title={t("common.delete")}
+                      aria-label={t("common.delete")}
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
@@ -384,7 +401,7 @@ export function KeybindingsSettings() {
         <Button
           variant="ghost"
           size="sm"
-          className="self-start text-muted-foreground"
+          className="mx-3 my-2 self-start text-muted-foreground"
           onClick={() => void handleResetAll()}
           disabled={bindings.length === 0}
         >

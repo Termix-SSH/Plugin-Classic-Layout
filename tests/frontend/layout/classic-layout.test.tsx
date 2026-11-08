@@ -18,6 +18,11 @@ vi.mock("react-i18next", async (importOriginal) => ({
 
 import { ClassicLayout } from "../../../src/frontend/layout/ClassicLayout";
 
+// The shell keeps polling after unmount; its late logs would reach a closed worker.
+for (const level of ["log", "info", "warn", "error", "debug"] as const) {
+  console[level] = () => {};
+}
+
 beforeEach(() => setPermissionsForTesting([], true));
 afterEach(cleanup);
 

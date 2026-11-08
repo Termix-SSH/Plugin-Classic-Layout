@@ -89,7 +89,7 @@ export function HostParentPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 h-8 w-full min-w-0 rounded-none border border-input bg-transparent px-2.5 text-xs transition-colors hover:border-ring/60 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 outline-none"
+          className="flex items-center gap-1.5 h-8 w-full min-w-0 rounded-none border border-border bg-transparent px-2.5 text-xs transition-colors hover:border-ring/60 focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 outline-none"
         >
           {selected ? (
             <span className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -105,7 +105,15 @@ export function HostParentPicker({
             <span
               role="button"
               tabIndex={0}
+              aria-label={t("manage.clearChoice")}
+              title={t("manage.clearChoice")}
               onClick={(e) => {
+                e.stopPropagation();
+                onChange("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
                 e.stopPropagation();
                 onChange("");
               }}
@@ -121,7 +129,7 @@ export function HostParentPicker({
         align="start"
         sideOffset={4}
         collisionPadding={8}
-        className="w-max min-w-(--radix-popover-trigger-width) max-w-96 max-h-(--radix-popover-content-available-height) p-0 rounded-none border-0 ring-1 ring-border shadow-md flex flex-col overflow-hidden"
+        className="w-max min-w-(--radix-popover-trigger-width) max-w-96 max-h-(--radix-popover-content-available-height) p-0 rounded-none shadow-md flex flex-col overflow-hidden"
       >
         <div className="flex items-center gap-2 border-b border-border px-2.5 h-8 shrink-0">
           <Search className="size-3 shrink-0 text-muted-foreground/60" />

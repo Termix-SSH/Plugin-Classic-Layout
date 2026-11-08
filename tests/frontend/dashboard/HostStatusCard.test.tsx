@@ -126,6 +126,20 @@ describe("dashboard host routing", () => {
     fireEvent.click(screen.getByText("Remote host"));
     expect(onOpenTab).toHaveBeenCalledWith(host, expected);
   });
+
+  it("opens a host row from the keyboard", () => {
+    const host = {
+      id: "1",
+      name: "Remote host",
+      ip: "192.0.2.1",
+      enableDesk: true,
+    } as unknown as Host;
+    const onOpenTab = vi.fn();
+    render(<HostStatusCard hosts={[host]} onOpenTab={onOpenTab} />);
+    const row = screen.getByText("Remote host").closest("[role=button]")!;
+    fireEvent.keyDown(row, { key: "Enter" });
+    expect(onOpenTab).toHaveBeenCalledWith(host, "desk");
+  });
 });
 
 describe("host row badge slot", () => {

@@ -16,7 +16,9 @@
     "more": "More",
     "logout": "Logout",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "desktopUpdates": {
     "title": "Desktop app",
@@ -67,7 +69,10 @@
     "resetRailOrder": "Reset order",
     "hideFromRail": "Hide from sidebar",
     "openSettings": "Open settings",
-    "mobileNavigation": "Navigation"
+    "mobileNavigation": "Navigation",
+    "allTabs": "All tabs",
+    "hideTabBar": "Hide tab bar",
+    "showTabBar": "Show tab bar"
   },
   "commandPalette": {
     "searchPlaceholder": "Search hosts, commands, or settings...",
@@ -110,7 +115,8 @@
     "noSearchResults": "No connections match your search",
     "rename": "Rename session",
     "forgetConfirm": "End the background session for {{name}}?",
-    "forget": "End session"
+    "forget": "End session",
+    "expiringNow": "Ending now"
   },
   "placeholders": {
     "apiKeyName": "e.g., CI Pipeline",
@@ -158,16 +164,14 @@
     "commandPalette": "Command Palette",
     "done": "Done",
     "clear": "Clear",
-    "dragToResizeColumns": "Drag to resize columns",
     "hostsAvailable": "Hosts Available",
-    "removeSection": "Remove section",
-    "addSection": "Add a section",
-    "allSectionsShown": "Everything is already on the dashboard.",
+    "addSection": "Add tiles",
     "fromPlugins": "From plugins",
-    "dropHere": "Drop a section here",
-    "dragToReorder": "Drag sections to reorder them",
+    "dropHere": "No tiles yet. Add some from the list.",
+    "dragToReorder": "Drag tiles to move them and their edges to resize",
     "clearActivityConfirm": "Clear your recent activity?",
-    "resetConfirm": "Reset the dashboard to its default layout?"
+    "resetConfirm": "Reset the dashboard to its default layout?",
+    "clearFailed": "Could not clear recent activity"
   },
   "admin": {
     "sectionGeneral": "General",
@@ -230,6 +234,9 @@
     "allowPasswordLoginDesc": "Username/password login",
     "externalAutoProvision": "Auto-create external accounts",
     "externalAutoProvisionDesc": "Create an account the first time someone signs in through an external login such as SSO or LDAP. When off, only people who already have an account can sign in that way",
+    "credentialStorage": "Allow saving passwords and keys",
+    "credentialStorageOff": "Saving passwords and keys is turned off on this server. Leave them empty and Termix asks when you connect.",
+    "credentialStorageDesc": "Off, nobody can save a password or private key on a host or credential, and Termix asks for them when connecting. Logins already saved stay until they are removed.",
     "secondFactorAfterExternalLogin": "Ask for a second factor after external logins (SSO, GitHub, Google, LDAP)",
     "secondFactorAfterExternalLoginDesc": "Off, an enrolled second factor is only asked for after password and other local logins, same as before. On, it is asked for after every login method, including SSO and LDAP.",
     "allowPasswordReset": "Allow Password Reset",
@@ -275,6 +282,13 @@
     "apiKeyName": "Name",
     "apiKeyUser": "User",
     "apiKeySelectUser": "Select a user...",
+    "apiKeyScope": "Access",
+    "apiKeyScopeFull": "Everything the user can do",
+    "apiKeyScopeRead": "Read only actions",
+    "apiKeyScopeRun": "Run actions",
+    "apiKeyScopeHint": "Action keys only reach Termix actions and the MCP server, nothing else.",
+    "apiKeyScopeActionsRead": "Actions, read only",
+    "apiKeyScopeActionsRun": "Actions",
     "apiKeyExpiresAt": "Expires At",
     "createKey": "Create Key",
     "apiKeyNoExpiry": "No expiry",
@@ -311,6 +325,10 @@
     "deleteUserFailed": "Failed to delete user",
     "deleteUserSuccess": "User \"{{username}}\" deleted",
     "deleteRoleSuccess": "Role \"{{name}}\" deleted",
+    "deleteRoleFailed": "Could not delete the role",
+    "roleNamePlaceholder": "developer",
+    "roleDisplayNamePlaceholder": "Developer",
+    "unknownError": "Unknown error",
     "revokeKeySuccess": "Key \"{{name}}\" revoked",
     "revokeKeyFailed": "Failed to revoke key",
     "copiedToClipboard": "Copied to clipboard",
@@ -353,6 +371,7 @@
     "unlinkAccountFailed": "Failed to unlink external sign-in",
     "updateRegistrationFailed": "Failed to update registration setting",
     "updatePasswordLoginFailed": "Failed to update password login setting",
+    "updateCredentialStorageFailed": "Failed to update credential storage setting",
     "updateSecondFactorAfterExternalLoginFailed": "Failed to update second factor setting",
     "updatePasswordResetFailed": "Failed to update password reset setting",
     "sessionTimeoutRange2": "Session timeout must be between 1 and 720 hours",
@@ -671,7 +690,8 @@
         "tryBetaTitle": "Try new features early",
         "tryBetaDescription": "Join the beta program in Updates.",
         "sendBetaFeedback": "Send beta feedback",
-        "openUpdates": "Updates"
+        "openUpdates": "Updates",
+        "hexLabel": "hex"
       }
     }
   },
@@ -757,6 +777,11 @@
       "allPluginsBeta": "Use betas for all plugins",
       "allPluginsStable": "All plugins back to stable",
       "saveFailed": "Could not save the change"
+    },
+    "user": {
+      "hostRows": {
+        "label": "Host row choices"
+      }
     }
   },
   "hostDefaults": {
@@ -783,6 +808,15 @@
   "sharing": {
     "revokeConfirm": "Remove access for {{name}}?",
     "revoke": "Remove access",
+    "deviceLogin": {
+      "label": "Login on this device only",
+      "none": "None",
+      "hint": "Stays on this device and is never sent to the server. It is used first, and connections start from this device.",
+      "noCredentials": "Add a credential with Keep on this device only to use it here.",
+      "saved": "Device login saved",
+      "keepOnDevice": "Keep on this device only",
+      "keepOnDeviceDesc": "The password or key never syncs to the server. Use it as a device login on shared hosts."
+    },
     "folderLogin": {
       "action": "Set personal login for shared hosts",
       "title": "Personal login for this folder",
@@ -824,7 +858,10 @@
     "pickHost": "Pick a host to edit",
     "pickCredential": "Pick a credential to edit",
     "pickDefaults": "Pick a level of defaults to edit",
-    "pickHint": "Everything about a connection lives here, grouped so you can find it."
+    "pickHint": "Everything about a connection lives here, grouped so you can find it.",
+    "clearChoice": "Clear",
+    "proxyPathTarget": "target",
+    "hostCopyName": "{{name}} (copy)"
   },
   "permissions": {
     "branding": {
@@ -837,6 +874,33 @@
     "presetIntro": "Choose how much shows on screen.",
     "presetChangeLater": "You can switch presets or change any single setting later in Settings, under Interface.",
     "appearanceTitle": "Make it yours",
-    "appearanceIntro": "Pick a theme, an accent color, a font and your language. Changes show right away, and you can change them later in Settings."
+    "appearanceIntro": "Pick a theme, an accent color, a font and your language. Changes show right away, and you can change them later in Settings.",
+    "hostRows": {
+      "title": "How should host rows work?",
+      "intro": "With many plugins on, each host row can get a lot of buttons. Pick how you want to reach a host's tools.",
+      "buttons": "Connect buttons",
+      "buttonsDesc": "A button per tool on each host row, like before. The host page stays in the host menu.",
+      "both": "Buttons and a host page button",
+      "bothDesc": "Keep the buttons and add one for the host page. Tools open inside the host page.",
+      "page": "Host page only",
+      "pageDesc": "No buttons on rows. Clicking a host opens its page, with every tool in one tab.",
+      "clickOpensPage": "Click opens the host page",
+      "changeLater": "You can change this later in Customize sidebar."
+    },
+    "accentHex": "hex"
+  },
+  "hostTools": {
+    "mode": "Open host tools in",
+    "modeDesc": "Where Docker, Files and other tool buttons open. The host page keeps every tool for a host in one tab. With Only the host page, host rows have no connect buttons and a click opens the host's page.",
+    "modeTab": "Their own tab",
+    "modePage": "The host page",
+    "rowButtons": "Buttons on host rows",
+    "modeOnly": "Only the host page",
+    "clickOpens": "Click opens",
+    "clickOpensDesc": "What a click on a host runs. Pick something else for one host from its menu.",
+    "clickAuto": "The first way to connect",
+    "useDefaultNamed": "Default ({{name}})",
+    "useDefaultButtons": "Use the default buttons",
+    "perHostHint": "To change them for one host, use Buttons on host rows in its menu."
   }
 }

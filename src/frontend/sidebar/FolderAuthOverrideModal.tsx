@@ -4,14 +4,19 @@ import {
   FormFooter,
   InlineView,
   getCredentials,
+  getFolderDeviceAuth,
+  isElectron,
+  setFolderDeviceAuth,
   type Credential,
   type Host,
   mapCredentials,
   getConnectedRemoteApi,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { DeviceLoginField, useDeviceLogin } from "./DeviceLoginField";
 
 type FolderAuthApi = {
   getFolderAuthOverride: (
@@ -67,6 +72,11 @@ export function FolderAuthOverrideModal({
   const sharedCopySyncId = sampleHost.sharedCopy
     ? (sampleHost.syncId ?? null)
     : null;
+  const deviceLogin = useDeviceLogin(
+    open && !!sampleHost.sharedCopy && isElectron(),
+    () => getFolderDeviceAuth(folder, "ssh"),
+    (credentialId) => setFolderDeviceAuth(folder, "ssh", credentialId),
+  );
 
   useEffect(() => {
     if (!open || !api) return;
@@ -108,18 +118,25 @@ export function FolderAuthOverrideModal({
     if (!api) return;
     setSaving(true);
     try {
+      if (deviceLogin.dirty) {
+        await deviceLogin.save();
+      }
       const credentialId = selectedId ? Number(selectedId) : null;
-      await api.setFolderAuthOverride(
-        folder,
-        "ssh",
-        credentialId,
-        sharedCopySyncId,
-      );
+      if (selectedId !== initialId) {
+        await api.setFolderAuthOverride(
+          folder,
+          "ssh",
+          credentialId,
+          sharedCopySyncId,
+        );
+      }
       toast.success(
         t(
-          credentialId === null
-            ? "sharing.folderLogin.cleared"
-            : "sharing.folderLogin.saved",
+          selectedId === initialId
+            ? "sharing.deviceLogin.saved"
+            : credentialId === null
+              ? "sharing.folderLogin.cleared"
+              : "sharing.folderLogin.saved",
         ),
       );
       window.dispatchEvent(new CustomEvent("termix:hosts-changed"));
@@ -146,7 +163,11 @@ export function FolderAuthOverrideModal({
             onCancel={() => onOpenChange(false)}
             onSave={() => void handleSave()}
             saving={saving}
-            disabled={loading || loadError || selectedId === initialId}
+            disabled={
+              loading ||
+              (selectedId === initialId && !deviceLogin.dirty) ||
+              (loadError && selectedId !== initialId)
+            }
           />
         }
       >
@@ -154,9 +175,7 @@ export function FolderAuthOverrideModal({
           {t("sharing.folderLogin.description", { folder })}
         </p>
         {loading ? (
-          <p className="py-4 text-center text-muted-foreground">
-            {t("common.loading")}
-          </p>
+          <LoadingState label={t("common.loading")} />
         ) : loadError ? (
           <p className="border border-destructive/30 bg-destructive/5 p-3 text-destructive">
             {t("hosts.sharing.authOverrideLoadError")}
@@ -194,6 +213,7 @@ export function FolderAuthOverrideModal({
             </p>
           </div>
         )}
+        <DeviceLoginField id={`device-login-${folder}`} login={deviceLogin} />
       </InlineView>
     </span>
   );

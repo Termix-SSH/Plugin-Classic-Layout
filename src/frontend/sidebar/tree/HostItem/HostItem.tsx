@@ -4,9 +4,12 @@ import {
   rem,
   enabledHostProtocols,
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -47,9 +50,24 @@ import {
   useSplitTargets,
   type SplitOpenTarget,
   MAX_PANES,
+  PluginComponent,
+  HostDotGroup,
 } from "@termix-ssh/plugin-sdk/ui";
-import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
-import { showsInBar, useBarActions } from "../host-bar-actions";
+import {
+  usePluginUiPreferences,
+  useTranslation,
+} from "@termix-ssh/plugin-sdk/frontend";
+import {
+  HOST_PAGE_TAB,
+  canChangeHostRows,
+  changeHostRow,
+  hostToolsMode,
+  openInHostPage,
+  opensInHostPage,
+  showsInBar,
+  useBarActions,
+  useHostRowPrefs,
+} from "../host-bar-actions";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -57,6 +75,7 @@ import {
   ChevronRight,
   Copy,
   CopyPlus,
+  PanelTop,
   Cpu,
   GripVertical,
   Key,
@@ -66,6 +85,7 @@ import {
   Lock,
   MemoryStick,
   MoreHorizontal,
+  MousePointerClick,
   Pencil,
   Pin,
   Share2,
@@ -113,7 +133,7 @@ export function buildStatusTooltip(
 }
 
 async function writeClipboardText(value: string): Promise<void> {
-  await copyToClipboard(value);
+  if (!(await copyToClipboard(value))) throw new Error("copy failed");
 }
 
 function canCopyHostPassword(host: Host): boolean {
@@ -282,6 +302,11 @@ export function HostItem({
   const allHostActions = useHostActions();
   const pluginActions = hostActionsFor(allHostActions, host);
   const barActions = useBarActions();
+  const rowPrefs = useHostRowPrefs(String(host.id));
+  const layoutPrefs = usePluginUiPreferences<{
+    hostTools?: string;
+    clickAction?: string;
+  }>();
   const badges = hostBadgesFor(useHostBadges(), host);
   const pluginMenuItems = hostMenuItemsFor(useHostContextMenuItems(), host);
   const splitTargets = useSplitTargets();
@@ -362,19 +387,27 @@ export function HostItem({
     field: "password" | "sudoPassword",
   ) {
     e.stopPropagation();
-    const password = await getHostPassword(Number(host.id), field);
-    if (!password) {
-      toast.error(t("nav.failedToCopyPassword"));
-      return;
-    }
-
     try {
+      const password = await getHostPassword(Number(host.id), field);
+      if (!password) {
+        toast.error(t("nav.failedToCopyPassword"));
+        return;
+      }
       await writeClipboardText(password);
       toast.success(t("nav.passwordCopied"));
     } catch {
       toast.error(t("nav.failedToCopyPassword"));
     }
   }
+
+  function copyText(value: string) {
+    writeClipboardText(value).then(
+      () => toast.success(t("hosts.copiedToClipboard")),
+      () => toast.error(t("common.copyFailed")),
+    );
+  }
+
+  const copyLinkActions = pluginActions.filter((action) => action.copyUrlView);
 
   if (query && !hostMatchesQuery(host, query)) return null;
 
@@ -386,9 +419,19 @@ export function HostItem({
   const availableActions: TabType[] = pluginActions.flatMap((action) =>
     action.tabType ? [action.tabType] : [],
   );
-  // Empty when no running plugin can connect to this host.
-  const defaultAction: TabType =
-    defaultConnectAction(allHostActions, host)?.tabType ?? "";
+  const hasHostPage = availableActions.includes(HOST_PAGE_TAB);
+  // Opt in: tools open inside the host page instead of their own tabs, or the
+  // host page is the only way in and the row keeps no connect buttons.
+  const toolsMode = hasHostPage
+    ? hostToolsMode(layoutPrefs.values.hostTools)
+    : "tab";
+  const toolsInPage = toolsMode !== "tab";
+  const pageOnly = toolsMode === "only";
+  // The first way to connect, used when no click action is picked or the
+  // picked one does not apply here. Empty when nothing can connect.
+  const connectAction: TabType = pageOnly
+    ? HOST_PAGE_TAB
+    : (defaultConnectAction(allHostActions, host)?.tabType ?? "");
   const openHostTab = (
     type: TabType,
     options?: {
@@ -413,8 +456,20 @@ export function HostItem({
     openTab: (_host, type, options) => openHostTab(type, options),
   };
 
+  const openToolInPage = (type: TabType, section: string) => {
+    markTabSurfaceUsed(HOST_PAGE_TAB);
+    recordHostActionPreference(host.id, type);
+    void openInHostPage(host, section).then((handled) => {
+      if (!handled) openHostTab(type);
+    });
+  };
+
   const runPluginAction = (action: HostActionDef) => {
     if (action.run) action.run(host, rowShell);
+    else if (toolsInPage && action.tabType === HOST_PAGE_TAB)
+      openToolInPage(HOST_PAGE_TAB, "overview");
+    else if (toolsInPage && opensInHostPage(action))
+      openToolInPage(action.tabType!, action.tabType!);
     else if (action.tabType) openHostTab(action.tabType);
   };
 
@@ -428,7 +483,7 @@ export function HostItem({
         icon: action.icon as typeof Terminal,
         label: action.label?.(host) ?? t(action.titleKey),
         tabType: action.tabType,
-        tray: showsInBar(barActions, action),
+        tray: showsInBar(barActions, action, rowPrefs?.bar),
         items:
           items && items.length > 1
             ? items.map((item) => ({
@@ -444,7 +499,46 @@ export function HostItem({
       };
     }),
   ].sort((a, b) => a.order - b.order || a.key.localeCompare(b.key));
-  const trayEntries = rowEntries.filter((entry) => entry.tray);
+  const trayEntries = pageOnly ? [] : rowEntries.filter((entry) => entry.tray);
+
+  // What a click runs: this host's pick, then the default pick, then the
+  // first way to connect. Host page only mode always opens the page.
+  const clickable = rowEntries.filter((entry) => !entry.items);
+  const hostPageEntry = clickable.find(
+    (entry) => entry.tabType === HOST_PAGE_TAB,
+  );
+  const pickFrom = (id: string | undefined) =>
+    id ? clickable.find((entry) => entry.key === id) : undefined;
+  const defaultClick =
+    pickFrom(layoutPrefs.values.clickAction) ??
+    (hostClickBehavior === "hostPage" ? hostPageEntry : undefined);
+  const clickEntry = pageOnly
+    ? undefined
+    : (pickFrom(rowPrefs?.click) ?? defaultClick);
+  const defaultAction: TabType = clickEntry
+    ? (clickEntry.tabType ?? "")
+    : connectAction;
+  const defaultClickLabel =
+    defaultClick?.label ??
+    clickable.find((entry) => entry.tabType === connectAction)?.label ??
+    "";
+
+  /** What a click on the row opens. Host page only mode reuses an open page. */
+  const openDefault = (options?: { forceNewTab?: boolean }) => {
+    if (pageOnly && !options?.forceNewTab) {
+      openToolInPage(HOST_PAGE_TAB, "overview");
+      return;
+    }
+    if (clickEntry) {
+      if (options?.forceNewTab && clickEntry.tabType) {
+        openHostTab(clickEntry.tabType, options);
+      } else {
+        clickEntry.run();
+      }
+      return;
+    }
+    openHostTab(connectAction, options);
+  };
 
   const connectionButtons = (
     <>
@@ -601,55 +695,145 @@ export function HostItem({
           align="start"
           className="text-xs w-auto min-w-44 max-w-72 whitespace-nowrap"
         >
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Terminal className="size-3.5 mr-2" />
-              {t("common.connect")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              {rowEntries.map((entry) => {
-                const Icon = entry.icon;
-                return entry.items ? (
-                  <DropdownMenuSub key={entry.key}>
-                    <DropdownMenuSubTrigger>
+          {!pageOnly && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Terminal className="size-3.5 mr-2" />
+                {t("common.connect")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {rowEntries.map((entry) => {
+                  const Icon = entry.icon;
+                  return entry.items ? (
+                    <DropdownMenuSub key={entry.key}>
+                      <DropdownMenuSubTrigger>
+                        <Icon className="size-3.5 mr-2" />
+                        {entry.label}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        {entry.items.map((item) => (
+                          <DropdownMenuItem
+                            key={item.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              item.run();
+                            }}
+                          >
+                            <Icon className="size-3.5 mr-2" />
+                            {item.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  ) : (
+                    <DropdownMenuItem
+                      key={entry.key}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        entry.run();
+                      }}
+                    >
                       <Icon className="size-3.5 mr-2" />
                       {entry.label}
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      {entry.items.map((item) => (
-                        <DropdownMenuItem
-                          key={item.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            item.run();
-                          }}
-                        >
-                          <Icon className="size-3.5 mr-2" />
-                          {item.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                ) : (
-                  <DropdownMenuItem
-                    key={entry.key}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      entry.run();
-                    }}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+          {!pageOnly && canChangeHostRows() && clickable.length > 1 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <MousePointerClick className="size-3.5 mr-2" />
+                {t("hostTools.clickOpens")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup
+                  value={pickFrom(rowPrefs?.click)?.key ?? ""}
+                  onValueChange={(value) =>
+                    changeHostRow(String(host.id), {
+                      click: value || undefined,
+                    })
+                  }
+                >
+                  <DropdownMenuRadioItem
+                    value=""
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Icon className="size-3.5 mr-2" />
-                    {entry.label}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          {focusExistingTab && (
+                    {t("hostTools.useDefaultNamed", {
+                      name: defaultClickLabel,
+                    })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuSeparator />
+                  {clickable.map((entry) => {
+                    const Icon = entry.icon;
+                    return (
+                      <DropdownMenuRadioItem
+                        key={entry.key}
+                        value={entry.key}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Icon className="size-3.5 mr-2" />
+                        {entry.label}
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+          {!pageOnly && canChangeHostRows() && rowEntries.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <PanelTop className="size-3.5 mr-2" />
+                {t("hostTools.rowButtons")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {rowEntries.map((entry) => {
+                  const Icon = entry.icon;
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={entry.key}
+                      checked={entry.tray}
+                      onSelect={(e) => e.preventDefault()}
+                      onClick={(e) => e.stopPropagation()}
+                      onCheckedChange={(checked) =>
+                        changeHostRow(String(host.id), {
+                          bar: {
+                            ...rowPrefs?.bar,
+                            [entry.key]: checked === true,
+                          },
+                        })
+                      }
+                    >
+                      <Icon className="size-3.5 mr-2" />
+                      {entry.label}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={!rowPrefs?.bar}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    changeHostRow(String(host.id), { bar: undefined });
+                  }}
+                >
+                  {t("hostTools.useDefaultButtons")}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+          <PluginComponent
+            id="operations.hostMenu"
+            host={host}
+            shell={rowShell}
+          />
+          {(focusExistingTab || pageOnly) && (
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                openHostTab(defaultAction, { forceNewTab: true });
+                openDefault({ forceNewTab: true });
               }}
             >
               <SquarePlus className="size-3.5 mr-2" />
@@ -667,7 +851,7 @@ export function HostItem({
                   {(() => {
                     const openAt = (target: SplitOpenTarget) =>
                       openInSplit(target, () =>
-                        openHostTab(defaultAction, { forceNewTab: true }),
+                        openDefault({ forceNewTab: true }),
                       );
                     return (
                       <>
@@ -780,13 +964,12 @@ export function HostItem({
           <DropdownMenuItem
             onClick={(e) => {
               e.stopPropagation();
-              writeClipboardText(
+              copyText(
                 formatHostAddress(host, {
                   showUsername: true,
                   showPort: false,
                 }),
               );
-              toast.success(t("hosts.copiedToClipboard"));
             }}
           >
             <Copy className="size-3.5 mr-2" />
@@ -822,25 +1005,23 @@ export function HostItem({
               {t("nav.copySudoPassword")}
             </DropdownMenuItem>
           )}
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Link className="size-3.5 mr-2" />
-              {t("hosts.copyLink")}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              {pluginActions
-                .filter((action) => action.copyUrlView)
-                .map((action) => {
+          {copyLinkActions.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Link className="size-3.5 mr-2" />
+                {t("hosts.copyLink")}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {copyLinkActions.map((action) => {
                   const Icon = action.icon;
                   return (
                     <DropdownMenuItem
                       key={action.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        writeClipboardText(
+                        copyText(
                           `${window.location.origin}?view=${encodeURIComponent(action.copyUrlView!)}&hostId=${host.id}`,
                         );
-                        toast.success(t("hosts.copiedToClipboard"));
                       }}
                     >
                       <Icon className="size-3.5 mr-2" />
@@ -850,8 +1031,9 @@ export function HostItem({
                     </DropdownMenuItem>
                   );
                 })}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
           {allowDelete && (
             <>
               <DropdownMenuSeparator />
@@ -913,8 +1095,9 @@ export function HostItem({
       {rowFields.showBadges &&
         badges.map((badge) => {
           const Badge = badge.component;
-          return <Badge key={badge.id} host={host} />;
+          return Badge ? <Badge key={badge.id} host={host} /> : null;
         })}
+      {rowFields.showBadges && <HostDotGroup host={host} badges={badges} />}
       {rowFields.showSharedBadge && host.isShared && (
         <TooltipProvider delayDuration={300}>
           <Tooltip>
@@ -953,6 +1136,36 @@ export function HostItem({
         className={`size-[10.5px] transition-transform duration-150 ${isTrayOpen ? "rotate-90" : ""}`}
       />
     </button>
+  );
+
+  // With no address or tags to show, a compact row fits on one line.
+  const compactOneLine =
+    isCompact && !rowFields.showAddress && !(showTags && !!host.tags?.length);
+  const compactDetails = (
+    <span className="sr-only">
+      {formatHostAddress(host, { showUsername: true, showPort: true })}
+      {host.tags?.length ? `, ${host.tags.join(", ")}` : ""}
+    </span>
+  );
+  const compactActions = !selectionMode && (
+    <div className="flex items-center min-w-0 max-w-full shrink-0 ml-auto">
+      <div
+        data-testid="host-inline-actions"
+        className={`flex items-center gap-[2px] min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 ${alwaysShowTray || actionsOnly || trayOpenState || hoverTrayOpen ? "" : "hidden"}`}
+      >
+        {connectionButtons}
+        <div
+          className={
+            alwaysShowTray || trayOpenState || hoverTrayOpen
+              ? "flex items-center gap-[2px]"
+              : "hidden"
+          }
+        >
+          {managementButtons}
+        </div>
+      </div>
+      {trayToggle}
+    </div>
   );
 
   return (
@@ -1052,6 +1265,7 @@ export function HostItem({
         setContextMenuPosition({ x: event.clientX, y: event.clientY });
         onMenuOpenChange?.(true);
       }}
+      data-host-id={host.id}
       className={`group relative flex items-stretch select-none transition-colors motion-interactive hover:bg-muted/50 ${
         canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       } ${
@@ -1065,7 +1279,7 @@ export function HostItem({
         // Middle-click always opens a new tab, matching browser tab behavior.
         if (e.button === 1 && !selectionMode && !isTouchOnly) {
           e.preventDefault();
-          openHostTab(defaultAction, { forceNewTab: true });
+          openDefault({ forceNewTab: true });
         }
       }}
       onClick={(e) => {
@@ -1078,8 +1292,8 @@ export function HostItem({
         if (isTouchOnly) {
           e.stopPropagation();
           const otherProtocols = enabledHostProtocols(host).length;
-          if (otherProtocols <= 1) {
-            openHostTab(defaultAction);
+          if (pageOnly || otherProtocols <= 1) {
+            openDefault();
           } else {
             onTrayOpenChange?.(!isTrayOpen);
           }
@@ -1091,17 +1305,17 @@ export function HostItem({
           singleClickTimer.current = null;
           if (e.detail > 1) return;
           if (forceNewTab) {
-            openHostTab(defaultAction, { forceNewTab });
+            openDefault({ forceNewTab });
           } else {
             singleClickTimer.current = setTimeout(() => {
               singleClickTimer.current = null;
-              openHostTab(defaultAction);
+              openDefault();
             }, DOUBLE_CLICK_WINDOW_MS);
           }
           return;
         }
         if (openOnDoubleClick) return;
-        openHostTab(defaultAction, forceNewTab ? { forceNewTab } : undefined);
+        openDefault(forceNewTab ? { forceNewTab } : undefined);
       }}
       onDoubleClick={(e) => {
         if (selectionMode || isTouchOnly) return;
@@ -1110,13 +1324,13 @@ export function HostItem({
           if (singleClickTimer.current) clearTimeout(singleClickTimer.current);
           singleClickTimer.current = null;
           if (e.ctrlKey || e.metaKey) return;
-          openHostTab(defaultAction, { forceNewTab: true });
+          openDefault({ forceNewTab: true });
           return;
         }
         if (!openOnDoubleClick) return;
         e.stopPropagation();
         const forceNewTab = e.ctrlKey || e.metaKey;
-        openHostTab(defaultAction, forceNewTab ? { forceNewTab } : undefined);
+        openDefault(forceNewTab ? { forceNewTab } : undefined);
       }}
     >
       {/* Status stripe */}
@@ -1171,7 +1385,8 @@ export function HostItem({
             </div>
           )}
           <TooltipProvider delayDuration={300}>
-            <Tooltip>
+            {/* Hidden while the host menu is open so it never covers it. */}
+            <Tooltip open={isMenuOpen ? false : undefined}>
               <TooltipTrigger asChild>
                 <span
                   className={`${tokens.nameTextSize} font-semibold truncate text-foreground leading-none tracking-tight`}
@@ -1222,17 +1437,17 @@ export function HostItem({
           )}
           {!isCompact && hostBadges}
           {!isCompact && trayToggle}
+          {compactOneLine && compactDetails}
+          {compactOneLine && hostBadges}
+          {compactOneLine && compactActions}
         </div>
 
-        {isCompact && (
+        {isCompact && !compactOneLine && (
           <div
             data-testid="host-details-row"
             className="flex items-center min-w-0 min-h-[19px]"
           >
-            <span className="sr-only">
-              {formatHostAddress(host, { showUsername: true, showPort: true })}
-              {host.tags?.length ? `, ${host.tags.join(", ")}` : ""}
-            </span>
+            {compactDetails}
             <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
               {hostBadges}
               {rowFields.showAddress && (
@@ -1260,26 +1475,7 @@ export function HostItem({
                 </div>
               )}
             </div>
-            {!selectionMode && (
-              <div className="flex items-center min-w-0 max-w-full shrink-0 ml-auto">
-                <div
-                  data-testid="host-inline-actions"
-                  className={`flex items-center gap-[2px] min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:shrink-0 ${alwaysShowTray || actionsOnly || trayOpenState || hoverTrayOpen ? "" : "hidden"}`}
-                >
-                  {connectionButtons}
-                  <div
-                    className={
-                      alwaysShowTray || trayOpenState || hoverTrayOpen
-                        ? "flex items-center gap-[2px]"
-                        : "hidden"
-                    }
-                  >
-                    {managementButtons}
-                  </div>
-                </div>
-                {trayToggle}
-              </div>
-            )}
+            {compactActions}
           </div>
         )}
 
@@ -1313,7 +1509,8 @@ export function HostItem({
           !selectionMode &&
           (alwaysShowTray ||
             actionsOnly ||
-            (shouldUseClickTray && isTrayOpen)) && (
+            (shouldUseClickTray && isTrayOpen)) &&
+          trayEntries.length > 0 && (
             <div className="flex items-center flex-wrap gap-[3.5px]">
               {connectionButtons}
             </div>
@@ -1362,11 +1559,14 @@ export function HostItem({
               className={`flex flex-col gap-0.5 ${alwaysShowTray || actionsOnly || shouldUseClickTray ? "" : "pt-1.5"}`}
             >
               {/* Connection buttons, only shown here when not already shown above */}
-              {!alwaysShowTray && !actionsOnly && !shouldUseClickTray && (
-                <div className="flex items-center flex-wrap gap-[1.75px]">
-                  {connectionButtons}
-                </div>
-              )}
+              {!alwaysShowTray &&
+                !actionsOnly &&
+                !shouldUseClickTray &&
+                trayEntries.length > 0 && (
+                  <div className="flex items-center flex-wrap gap-[1.75px]">
+                    {connectionButtons}
+                  </div>
+                )}
 
               {/* Management buttons row */}
               <div

@@ -9,6 +9,7 @@ import {
   Button,
   Input,
   roleLabel,
+  LoadingState,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
@@ -95,6 +96,17 @@ export function AdminCreateUserDialog({
               className="pr-9"
             />
             <button
+              type="button"
+              title={
+                showNewPassword
+                  ? t("common.hidePassword")
+                  : t("common.showPassword")
+              }
+              aria-label={
+                showNewPassword
+                  ? t("common.hidePassword")
+                  : t("common.showPassword")
+              }
               onClick={() => setShowNewPassword((o) => !o)}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
@@ -231,9 +243,7 @@ export function AdminEditUserDialog({
           <div className="flex flex-col gap-2 py-3">
             <span className="text-sm font-medium">{t("admin.userRoles")}</span>
             {editUserRolesLoading ? (
-              <span className="text-xs text-muted-foreground">
-                {t("common.loading")}
-              </span>
+              <LoadingState label={t("common.loading")} />
             ) : (
               <>
                 {editUserRoles.length > 0 && (
@@ -249,6 +259,9 @@ export function AdminEditUserDialog({
                           {roleLabel(t, ur.roleDisplayName)}
                           {!isSystem && (
                             <button
+                              type="button"
+                              title={t("common.remove")}
+                              aria-label={t("common.remove")}
                               onClick={async () => {
                                 try {
                                   await removeRoleFromUser(

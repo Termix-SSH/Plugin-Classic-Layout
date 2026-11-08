@@ -13,6 +13,9 @@ export function AdminToggle({
 }) {
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={on}
       onClick={onToggle}
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center border-2 transition-colors ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${on ? "bg-accent-brand border-accent-brand" : "bg-muted border-border"}`}
@@ -41,14 +44,22 @@ export function AccordionSection({
   if (embedded) {
     if (!open) return null;
     return (
-      <div className="flex flex-col border border-border bg-card px-3 pb-3">
+      <div
+        data-tile-card=""
+        className="flex flex-col border border-border px-3 pb-3"
+      >
         {children}
       </div>
     );
   }
   return (
-    <div className="border border-border bg-card overflow-hidden shrink-0">
+    <div
+      data-tile-card=""
+      className="border border-border overflow-hidden shrink-0"
+    >
       <button
+        type="button"
+        aria-expanded={open}
         onClick={onToggle}
         className="flex items-center gap-2 w-full px-3 py-2.5 text-left hover:bg-muted/40 transition-colors"
       >
