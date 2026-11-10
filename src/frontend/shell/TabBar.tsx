@@ -55,6 +55,14 @@ import {
 const DRAG_OUT_DISTANCE = 16;
 
 /**
+ * Caps a tab's width on narrow screens so one long hostname can't make the
+ * strip pan just to read it or reach its buttons. 100cqw is the scroll strip's
+ * visible width (it is the @container), not its scrolled content, so a percent
+ * width would not work here. Desktop tabs keep their natural width.
+ */
+const TAB_MAX_WIDTH = "max-w-[min(16rem,100cqw)] md:max-w-none";
+
+/**
  * Tabs holding a live connection that can be refreshed: the registered
  * session tabs.
  */
@@ -341,7 +349,7 @@ export function TabBar({
       >
         <div
           ref={tabBarRef}
-          className="relative flex h-full flex-1 min-w-0 overflow-x-auto scrollbar-none pl-px"
+          className="@container relative flex h-full flex-1 min-w-0 overflow-x-auto scrollbar-none pl-px"
         >
           {indicatorRect && !dragTabId && (
             <span
@@ -452,7 +460,7 @@ export function TabBar({
                 ${
                   tab.type === "dashboard"
                     ? `px-2.5 md:px-3.5 ${active ? "bg-surface text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`
-                    : `px-2.5 md:px-4 font-medium ${active ? "bg-surface text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`
+                    : `${TAB_MAX_WIDTH} px-2.5 md:px-4 font-medium ${active ? "bg-surface text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-surface"}`
                 }`}
               >
                 {showTabNumbers && tab.type !== "dashboard" && (
@@ -478,11 +486,15 @@ export function TabBar({
                     style={{ fontWeight: "inherit" }}
                   />
                 ) : (
-                  tab.type !== "dashboard" && tab.label
+                  tab.type !== "dashboard" && (
+                    <span className="min-w-0 truncate" title={tab.label}>
+                      {tab.label}
+                    </span>
+                  )
                 )}
                 {tab.type !== "dashboard" && renamingTabId !== tab.id && (
                   <div
-                    className={`flex items-center gap-0.5 ml-1 ${active ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100"}`}
+                    className={`flex shrink-0 items-center gap-0.5 ml-1 ${active ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100"}`}
                   >
                     {isConnectionTab(tab.type) && (
                       <button
@@ -573,7 +585,9 @@ export function TabBar({
                 }`}
                 >
                   {tabIcon(tab.type)}
-                  {tab.type !== "dashboard" && tab.label}
+                  {tab.type !== "dashboard" && (
+                    <span className="min-w-0 truncate">{tab.label}</span>
+                  )}
                 </div>
               );
             })()}
