@@ -398,6 +398,9 @@ export const SETTINGS_SEARCH_INDEX: Record<string, string[]> = {
     "newUi.sidebar.userProfile.selectFile",
   ],
   "interface": [
+    "newUi.sidebar.userProfile.closeToTray",
+    "newUi.sidebar.userProfile.closeToTrayDesc",
+    "newUi.sidebar.userProfile.closeToTraySaveFailed",
     "newUi.sidebar.userProfile.interfacePresetDesc",
     "newUi.sidebar.userProfile.presetClearOverrides",
     "newUi.sidebar.userProfile.presetConfirmApply",

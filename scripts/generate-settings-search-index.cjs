@@ -78,6 +78,7 @@ function profileSections() {
     ...new Set([
       ...(out.interface ?? []),
       ...keysIn(read("InterfacePresetSettings.tsx")),
+      ...keysIn(read("DesktopAppSettings.tsx")),
     ]),
   ];
   out.security = [

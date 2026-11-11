@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+### Added
+
+- Desktop app: a Close to tray switch in Settings, Interface. Turn it off to quit Termix when you close the window
+
 ## 1.1.2
 
 ### Added
