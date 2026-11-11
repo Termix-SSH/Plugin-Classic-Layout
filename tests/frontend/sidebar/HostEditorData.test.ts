@@ -422,7 +422,7 @@ describe("createHostEditorForm credentialId", () => {
   });
 });
 
-// Support#1240: RDP/VNC/Telnet can now originate from the desktop, so the
+// RDP/VNC/Telnet can now originate from the desktop, so the
 // control has to appear for hosts that enable only those protocols -- it used
 // to be gated on SSH alone.
 describe("connectionOriginAppliesTo", () => {
