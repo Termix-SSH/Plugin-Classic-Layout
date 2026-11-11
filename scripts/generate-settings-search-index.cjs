@@ -111,6 +111,7 @@ function adminSections() {
         ...keysIn(functionBody(settings, "AdminGeneralSettingsSection")),
         ...keysIn(read("AdminPluginDeveloperMode.tsx")),
         ...keysIn(read("AdminHttpsSetting.tsx")),
+        ...keysIn(read("AdminHostKeySetting.tsx")),
       ]),
     ],
     "admin-users": [

@@ -5,6 +5,7 @@
 ### Added
 
 - Desktop app: a Close to tray switch in Settings, Interface. Turn it off to quit Termix when you close the window
+- Admin settings, General: a switch to trust new host keys without a prompt, for plugins and schedules that connect with nobody to ask
 
 ## 1.1.2
 
