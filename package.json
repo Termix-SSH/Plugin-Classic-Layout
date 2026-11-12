@@ -37,7 +37,7 @@
     "react-i18next": "^17.0.16",
     "sharp": "^0.35.4",
     "sonner": "^2.0.8",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "vitest": "^4.1.11"
   },
   "peerDependencies": {
