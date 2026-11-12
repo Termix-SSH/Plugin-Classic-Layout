@@ -14,8 +14,8 @@
     "generate:settings-index": "node scripts/generate-settings-search-index.cjs"
   },
   "dependencies": {
-    "@tanstack/react-virtual": "3.14.13",
-    "lucide-react": "^1.33.0",
+    "@tanstack/react-virtual": "3.14.26",
+    "lucide-react": "^1.70.0",
     "motion": "^13.1.1"
   },
   "devDependencies": {
@@ -25,7 +25,7 @@
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "express": "^5.2.1",
@@ -33,7 +33,7 @@
     "i18next": "^26.4.2",
     "jsdom": "^30.0.1",
     "lint-staged": "^17.2.0",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "react-i18next": "^17.0.16",
     "sharp": "^0.35.4",
     "sonner": "^2.0.8",
