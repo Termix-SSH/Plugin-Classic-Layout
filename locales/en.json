@@ -485,7 +485,11 @@
     "revokeSession": "Sign out",
     "deleteRoleConfirm": "Delete the {{name}} role?",
     "revokeKeyConfirm": "Revoke the API key {{name}}?",
-    "revokeKey": "Revoke"
+    "revokeKey": "Revoke",
+    "apiKeyScopeReadAll": "Read only, anything the user can see",
+    "apiKeyNeverExpires": "Never expires",
+    "apiKeyExpiryHint": "Left blank, the key works for 90 days.",
+    "changeHeld": "This change waits {{minutes}} minutes so the other admins can see it."
   },
   "newUi": {
     "sidebar": {

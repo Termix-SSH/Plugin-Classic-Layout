@@ -34,8 +34,9 @@ async function start(options: {
     dataDir: dir,
   });
   await activate(mock.ctx);
-  provider = mock.ctx.registry.consume("classic-layout.brandingProvider") as
-    (() => Promise<unknown>) | undefined;
+  provider = (await mock.ctx.registry.consume(
+    "classic-layout.brandingProvider",
+  )) as (() => Promise<unknown>) | undefined;
 
   const app = express();
   app.use(express.json({ limit: "5mb" }));

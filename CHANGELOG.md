@@ -6,6 +6,12 @@
 
 - Desktop app: a Close to tray switch in Settings, Interface. Turn it off to quit Termix when you close the window
 - Admin settings, General: a switch to trust new host keys without a prompt, for plugins and schedules that connect with nobody to ask
+- New API keys: pick read only, actions, run actions or full access, and an expiry or never. Left as is, a key is read only and works for 90 days
+- Making someone an admin or turning off password login says when the change waits for the other admins
+
+### Changed
+
+- Needs Termix 26.11.2 or newer
 
 ## 1.1.2
 
