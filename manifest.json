@@ -21,7 +21,7 @@
   "env": [],
   "engine": {
     "termix": ">=26.11.2-0",
-    "api": "^1.15"
+    "api": "^2.0.0"
   },
   "capabilities": [
     "files:own",
@@ -30,6 +30,9 @@
     "ui:layout",
     "ui:surface"
   ],
+  "sandbox": {
+    "registry": ["classic-layout.brandingProvider"]
+  },
   "contributes": {
     "permissions": [
       {

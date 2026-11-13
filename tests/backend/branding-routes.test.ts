@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
 import express, { type Router } from "express";
-import sharp from "sharp";
+import { pngImage } from "./images";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMockCtx } from "@termix-ssh/plugin-sdk/testing";
 import type { PluginManifest } from "@termix-ssh/plugin-sdk/manifest";
@@ -25,6 +25,7 @@ async function start(options: {
 }) {
   let router: Router | null = null;
   const mock = createMockCtx({
+    sandbox: true,
     pluginId: manifest.id,
     manifest,
     capabilities: manifest.capabilities,
@@ -58,11 +59,7 @@ async function request(method: string, body?: unknown) {
 
 beforeEach(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "classic-branding-"));
-  const buffer = await sharp({
-    create: { width: 4, height: 4, channels: 3, background: "#112233" },
-  })
-    .png()
-    .toBuffer();
+  const buffer = pngImage();
   pngDataUrl = `data:image/png;base64,${buffer.toString("base64")}`;
 });
 
