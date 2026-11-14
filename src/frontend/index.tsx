@@ -16,6 +16,10 @@ import { DashboardTabType, ManageTabType, SettingsTabType } from "./tabs";
 
 export function activate(app: TermixApp): void {
   app.declareActionSlot({ id: "tabbar.actions", accepts: ["component"] });
+  // How a component from a framed plugin sizes itself in our slots.
+  for (const id of ["dashboard.hostRow", "dashboard.hostRowBadge"]) {
+    app.declareActionSlot({ id, accepts: ["component"], fit: "inline" });
+  }
   app.registerLayout({
     id: "classic",
     label: "layout.name",
