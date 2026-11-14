@@ -14,6 +14,11 @@
 - Runs in its own process on Termix 26.11.2 and later, with no access to the server beyond what Termix allows it
 - The branding API takes a PNG or JPEG logo. The settings page turns a WebP into a PNG before sending, so WebP logos still work there
 - Needs Termix 26.11.2 or newer
+- Usage bars and health badges other plugins add to dashboard host rows are drawn from plain values, with no frame per host, so a long host list loads faster (needs Termix 26.11.2)
+
+### Fixed
+
+- Host rows show status dots other plugins add, like the site status of a host mirrored from another Termix
 
 ## 1.1.2
 
