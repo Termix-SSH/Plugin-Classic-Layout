@@ -672,17 +672,19 @@ export function AdminRolesSection({
                     {role.name}
                   </span>
                 </div>
-                {!role.isSystem && (
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`size-6 ${editingRoleId === role.id ? "text-accent-brand" : "text-muted-foreground hover:text-foreground"}`}
-                      title={t("admin.rolePermissions.editAction")}
-                      onClick={() => openPermissionsEditor(role)}
-                    >
-                      <KeyRound className="size-3" />
-                    </Button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  {/* The built-in roles' permissions are editable; only
+                      deleting them is not. */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`size-6 ${editingRoleId === role.id ? "text-accent-brand" : "text-muted-foreground hover:text-foreground"}`}
+                    title={t("admin.rolePermissions.editAction")}
+                    onClick={() => openPermissionsEditor(role)}
+                  >
+                    <KeyRound className="size-3" />
+                  </Button>
+                  {!role.isSystem && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -715,8 +717,8 @@ export function AdminRolesSection({
                     >
                       <Trash2 className="size-3" />
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               {editingRoleId === role.id && (
                 <div className="flex flex-col gap-2.5 mt-2.5 p-2.5 border border-border bg-muted/20">
