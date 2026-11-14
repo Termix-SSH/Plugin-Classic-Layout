@@ -246,3 +246,25 @@ describe("saving a role", () => {
     expect(payload.permissions).toContain("hosts.view");
   });
 });
+
+describe("built-in roles", () => {
+  it("can have their permissions edited but not be deleted", () => {
+    renderSection({
+      ...makeRole(["hosts.view"]),
+      name: "user",
+      isSystem: true,
+    });
+    expect(
+      screen.getByRole("button", { name: /admin.rolePermissions.editAction/i }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "common.delete" })).toBeNull();
+  });
+
+  it("leaves both buttons on a custom role", () => {
+    renderSection(makeRole(["hosts.view"]));
+    expect(
+      screen.getByRole("button", { name: /admin.rolePermissions.editAction/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "common.delete" })).toBeTruthy();
+  });
+});
