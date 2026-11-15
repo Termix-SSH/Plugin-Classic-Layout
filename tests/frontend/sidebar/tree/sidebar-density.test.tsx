@@ -116,6 +116,9 @@ beforeEach(() => {
   );
   vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(600);
   vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(300);
+  // react-virtual 3.14.26 reads the scroll box from client sizes
+  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(600);
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(300);
 });
 afterEach(() => {
   vi.restoreAllMocks();
