@@ -9,6 +9,13 @@
     "PATCH /plugin-api/classic-layout/branding": {
       "access": "user",
       "permission": "classic-layout.branding"
+    },
+    "GET /plugin-api/classic-layout/interface-defaults": {
+      "access": "user"
+    },
+    "PUT /plugin-api/classic-layout/interface-defaults": {
+      "access": "user",
+      "permission": "classic-layout.interface-defaults"
     }
   }
 }

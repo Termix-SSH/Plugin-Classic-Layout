@@ -1,5 +1,7 @@
 import {
   Select2,
+  useUiPreference,
+  useUiPreferencesContext,
   actionOrder,
   useHostActions,
   SectionCard,
@@ -36,6 +38,8 @@ const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
 export function HostListSettings() {
   const { t } = useTranslation();
   const { preferences, update } = useHostSidebarPreferences();
+  const ui = useUiPreferencesContext();
+  const hostForm = useUiPreference("hostEditor", "mode");
   const actions = [...useHostActions()].sort(
     (a, b) => actionOrder(a) - actionOrder(b) || a.id.localeCompare(b.id),
   );
@@ -72,6 +76,25 @@ export function HostListSettings() {
         title={t("hosts.customizeDensityTitle")}
         icon={<Rows3 className="size-3.5" />}
       >
+        <SettingRow
+          label={t("settings.hostForm.label")}
+          description={t("settings.hostForm.description")}
+        >
+          <Select2
+            value={hostForm}
+            onChange={(e) =>
+              ui?.setOverride(
+                "hostEditor",
+                "mode",
+                e.target.value as "simple" | "full",
+              )
+            }
+            className="h-8 border border-border bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="simple">{t("settings.hostForm.simple")}</option>
+            <option value="full">{t("settings.hostForm.full")}</option>
+          </Select2>
+        </SettingRow>
         <SettingRow
           label={t("hosts.customizeDensityTitle")}
           description={

@@ -528,6 +528,10 @@ export const SETTINGS_SEARCH_INDEX: Record<string, string[]> = {
     "newUi.sidebar.userProfile.showHostTagsDesc",
     "newUi.sidebar.userProfile.statusColors",
     "newUi.sidebar.userProfile.statusColorsDesc",
+    "settings.hostForm.description",
+    "settings.hostForm.full",
+    "settings.hostForm.label",
+    "settings.hostForm.simple",
   ],
   "interface": [
     "newUi.sidebar.userProfile.closeToTray",
@@ -543,6 +547,7 @@ export const SETTINGS_SEARCH_INDEX: Record<string, string[]> = {
     "newUi.sidebar.userProfile.runSetupAgainButton",
     "newUi.sidebar.userProfile.runSetupAgainDesc",
     "newUi.sidebar.userProfile.sectionInterface",
+    "settings.interfaceDefaults.lockedNote",
   ],
   "keybindings": [
     "common.delete",

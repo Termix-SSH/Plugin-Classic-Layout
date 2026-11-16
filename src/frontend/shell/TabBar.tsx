@@ -10,6 +10,7 @@ import {
   Separator,
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   tabIcon,
   isSessionTabType,
@@ -49,6 +50,7 @@ import {
   Maximize2,
   Minimize2,
   PanelRight,
+  MoreHorizontal,
 } from "lucide-react";
 
 /** How far below the bar a dragged tab has to go before it drags into the view. */
@@ -654,62 +656,44 @@ export function TabBar({
             onSplit={(edge) => onSplitAction({ kind: "splitActive", edge })}
             onPreset={(presetId) => onSplitAction({ kind: "preset", presetId })}
           />
-          {onToggleRightDock && (
-            <>
-              <Separator orientation="vertical" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-full w-12.5 rounded-none ${rightDockOpen ? "text-accent-brand bg-accent-brand/10" : "text-muted-foreground hover:text-foreground"}`}
-                title={t("nav.toggleRightDock")}
-                aria-label={t("nav.toggleRightDock")}
-                aria-pressed={!!rightDockOpen}
-                onClick={onToggleRightDock}
-              >
-                <PanelRight className="size-4" />
-              </Button>
-            </>
-          )}
-          {!isElectron() && (
-            <>
-              <Separator orientation="vertical" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-full w-12.5 rounded-none text-muted-foreground hover:text-foreground"
-                title={
-                  isAppFullscreen
-                    ? t("nav.exitFullscreen")
-                    : t("nav.enterFullscreen")
-                }
-                aria-label={
-                  isAppFullscreen
-                    ? t("nav.exitFullscreen")
-                    : t("nav.enterFullscreen")
-                }
-                onClick={onToggleAppFullscreen}
-              >
-                {isAppFullscreen ? (
-                  <Minimize2 className="size-4" />
-                ) : (
-                  <Maximize2 className="size-4" />
-                )}
-              </Button>
-            </>
-          )}
           <Separator orientation="vertical" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-full w-12.5 rounded-none text-muted-foreground hover:text-foreground"
-            onClick={() => setOpen((o) => !o)}
-            title={t("nav.hideTabBar")}
-            aria-label={t("nav.hideTabBar")}
-          >
-            <ChevronUp
-              className={`size-4 transition-transform ${open ? "" : "rotate-180"}`}
-            />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-full w-12.5 rounded-none ${rightDockOpen ? "text-accent-brand" : "text-muted-foreground hover:text-foreground"}`}
+                title={t("nav.viewMenu")}
+                aria-label={t("nav.viewMenu")}
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="text-xs min-w-48">
+              {onToggleRightDock && (
+                <DropdownMenuItem onClick={onToggleRightDock}>
+                  <PanelRight className="size-3.5 mr-2" />
+                  {t("nav.toggleRightDock")}
+                </DropdownMenuItem>
+              )}
+              {!isElectron() && (
+                <DropdownMenuItem onClick={onToggleAppFullscreen}>
+                  {isAppFullscreen ? (
+                    <Minimize2 className="size-3.5 mr-2" />
+                  ) : (
+                    <Maximize2 className="size-3.5 mr-2" />
+                  )}
+                  {isAppFullscreen
+                    ? t("nav.exitFullscreen")
+                    : t("nav.enterFullscreen")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => setOpen((o) => !o)}>
+                <ChevronUp className="size-3.5 mr-2" />
+                {t("nav.hideTabBar")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       {!open && (

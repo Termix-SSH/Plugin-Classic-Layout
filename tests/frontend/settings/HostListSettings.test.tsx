@@ -11,6 +11,14 @@ vi.mock("@termix-ssh/plugin-sdk/frontend", async (importOriginal) => ({
   usePluginUiPreferences: () => ({ values: {}, set: vi.fn() }),
 }));
 
+const setOverride = vi.fn();
+vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useUiPreference: (area: string, key: string) =>
+    area === "hostEditor" && key === "mode" ? "simple" : undefined,
+  useUiPreferencesContext: () => ({ setOverride }),
+}));
+
 const hostUpdate = vi.fn();
 const credentialUpdate = vi.fn();
 vi.mock(
@@ -54,6 +62,15 @@ describe("HostListSettings", () => {
     expect(hostUpdate).toHaveBeenCalledTimes(1);
     const next = applied(hostUpdate, prev);
     expect(next.display.stripedRows).toBe(!prev.display.stripedRows);
+  });
+});
+
+describe("Add host form setting", () => {
+  it("saves the form the add host editor opens with", () => {
+    render(<HostListSettings />);
+    const select = screen.getByDisplayValue("settings.hostForm.simple");
+    fireEvent.change(select, { target: { value: "full" } });
+    expect(setOverride).toHaveBeenCalledWith("hostEditor", "mode", "full");
   });
 });
 
