@@ -72,7 +72,15 @@
     "mobileNavigation": "Navigation",
     "allTabs": "All tabs",
     "hideTabBar": "Hide tab bar",
-    "showTabBar": "Show tab bar"
+    "showTabBar": "Show tab bar",
+    "allApps": "All apps",
+    "findApp": "Find an app",
+    "pinToRail": "Pin to rail",
+    "unpinFromRail": "Unpin from rail",
+    "appSettings": "App settings",
+    "allAppsHint": "Pin the ones you use. Right-click an app for its settings.",
+    "allAppsLockedHint": "Your admin picks the apps on your rail.",
+    "viewMenu": "View"
   },
   "commandPalette": {
     "searchPlaceholder": "Search hosts, commands, or settings...",
@@ -171,7 +179,8 @@
     "dragToReorder": "Drag tiles to move them and their edges to resize",
     "clearActivityConfirm": "Clear your recent activity?",
     "resetConfirm": "Reset the dashboard to its default layout?",
-    "clearFailed": "Could not clear recent activity"
+    "clearFailed": "Could not clear recent activity",
+    "help": "Help"
   },
   "admin": {
     "sectionGeneral": "General",
@@ -237,6 +246,9 @@
     "credentialStorage": "Allow saving passwords and keys",
     "credentialStorageOff": "Saving passwords and keys is turned off on this server. Leave them empty and Termix asks when you connect.",
     "credentialStorageDesc": "Off, nobody can save a password or private key on a host or credential, and Termix asks for them when connecting. Logins already saved stay until they are removed.",
+    "hostKeyTrust": "Trust new host keys without a prompt",
+    "hostKeyTrustDesc": "When a plugin, schedule or the API connects to a host whose key was never checked, save that key and connect. Off, those connections are refused until someone opens a terminal to the host and trusts its key.",
+    "hostKeyTrustFailed": "Failed to update the host key setting",
     "secondFactorAfterExternalLogin": "Ask for a second factor after external logins (SSO, GitHub, Google, LDAP)",
     "secondFactorAfterExternalLoginDesc": "Off, an enrolled second factor is only asked for after password and other local logins, same as before. On, it is asked for after every login method, including SSO and LDAP.",
     "allowPasswordReset": "Allow Password Reset",
@@ -482,7 +494,91 @@
     "revokeSession": "Sign out",
     "deleteRoleConfirm": "Delete the {{name}} role?",
     "revokeKeyConfirm": "Revoke the API key {{name}}?",
-    "revokeKey": "Revoke"
+    "revokeKey": "Revoke",
+    "apiKeyScopeReadAll": "Read only, anything the user can see",
+    "apiKeyNeverExpires": "Never expires",
+    "apiKeyExpiryHint": "Left blank, the key works for 90 days.",
+    "changeHeld": "This change waits {{minutes}} minutes so the other admins can see it.",
+    "userStatusFilter": "Account state",
+    "userStatusAll": "All accounts",
+    "userStatusActive": "Active",
+    "userStatusDisabled": "Turned off",
+    "userStatusPending": "Waiting for approval",
+    "disabledBadge": "Off",
+    "pendingBadge": "Waiting",
+    "accountStatusTitle": "Account state",
+    "accountStatusActive": "This account can sign in.",
+    "accountStatusDisabled": "This account is turned off. It can't sign in and its API keys don't work.",
+    "accountStatusPending": "This account is waiting for approval and can't sign in yet.",
+    "lastLogin": "Last sign in {{time}}",
+    "disableUser": "Turn off account",
+    "enableUser": "Turn on account",
+    "approveUser": "Approve",
+    "disableUserConfirm": "Turn off {{username}}? They are signed out everywhere and can't sign in until you turn the account back on.",
+    "userDisabled": "{{username}} is turned off",
+    "userEnabled": "{{username}} is turned on",
+    "userApproved": "{{username}} is approved",
+    "userStatusFailed": "Could not change the account",
+    "profileTitle": "Name and email",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Display name",
+    "email": "Email",
+    "emailPlaceholder": "Email",
+    "profileSaved": "Saved",
+    "profileSaveFailed": "Could not save",
+    "manageTabAccess": "Access",
+    "sectionInvites": "Invite links",
+    "invitesDescription": "Links that let someone make an account, even with sign up off.",
+    "invitesEmpty": "No invite links yet",
+    "inviteCreate": "New invite",
+    "inviteCreateFailed": "Could not make the invite",
+    "inviteCreatedNotice": "Copy this link now. It is not shown again.",
+    "inviteCopy": "Copy link",
+    "inviteCopied": "Link copied",
+    "inviteNotePlaceholder": "Note, like who it is for",
+    "inviteRole": "Role",
+    "inviteNoRole": "No extra role",
+    "inviteExpires": "Expires",
+    "inviteExpiresIn_one": "Ends in {{count}} day",
+    "inviteExpiresIn_other": "Ends in {{count}} days",
+    "inviteUses": "Uses",
+    "inviteMakeAdmin": "Make them an admin",
+    "inviteUntitled": "Invite",
+    "inviteUsesOf": "{{uses}} of {{max}} used",
+    "inviteState_active": "Active",
+    "inviteState_revoked": "Revoked",
+    "inviteState_expired": "Expired",
+    "inviteState_used": "Used up",
+    "inviteRevoke": "Revoke",
+    "inviteRevokeConfirm": "Revoke this invite link?",
+    "inviteRevokeFailed": "Could not revoke the invite",
+    "sectionAccess": "Access review",
+    "accessCount_one": "{{count}} share",
+    "accessCount_other": "{{count}} shares",
+    "accessExport": "Export CSV",
+    "accessExportFailed": "Could not export",
+    "accessKind": "Kind",
+    "accessKindAll": "Everything",
+    "accessKind_host": "Host",
+    "accessKind_folder": "Folder",
+    "accessKind_credential": "Credential",
+    "accessUser": "User",
+    "accessAnyUser": "Any user",
+    "accessRole": "Role",
+    "accessAnyRole": "Any role",
+    "accessToUser": "to {{name}}",
+    "accessToRole": "to role {{name}}",
+    "accessOwner": "owner {{name}}",
+    "accessGrantedBy": "shared by {{name}}",
+    "accessExpires": "ends {{date}}",
+    "accessLastUsed": "last used {{date}}",
+    "accessEmpty": "Nothing is shared",
+    "sectionAccountSettings": "Accounts and access",
+    "adminHostBypass": "Admins can open every user's hosts",
+    "adminHostBypassDesc": "When off, admins only see hosts that are shared with them, and can't open other users' data from the user page. Turning it on waits for the admin cooling-off time if one is set.",
+    "signupApproval": "Approve new SSO accounts",
+    "signupApprovalDesc": "Someone signing in through SSO or LDAP for the first time waits until an admin approves the account.",
+    "updateSettingFailed": "Could not save the setting"
   },
   "newUi": {
     "sidebar": {
@@ -559,6 +655,9 @@
         "desktopProfileDescription": "This profile lives on this device and signs in by itself. Link it to a Termix server to use the same hosts and settings on every device.",
         "sectionInterface": "Interface",
         "interfacePresetDesc": "How much detail Termix shows. Every feature stays available.",
+        "closeToTray": "Close to tray",
+        "closeToTrayDesc": "Closing the window keeps Termix running in the tray so your connections stay open. Turn it off to quit when you close the window.",
+        "closeToTraySaveFailed": "Could not save the setting",
         "presetClearOverrides": "Reset all",
         "presetOverridesTitle": "Customized",
         "presetRevertArea": "Revert",
@@ -691,7 +790,11 @@
         "tryBetaDescription": "Join the beta program in Updates.",
         "sendBetaFeedback": "Send beta feedback",
         "openUpdates": "Updates",
-        "hexLabel": "hex"
+        "hexLabel": "hex",
+        "displayNameLabel": "Display name",
+        "emailLabel": "Email",
+        "profileSaved": "Saved",
+        "profileSaveFailed": "Could not save"
       }
     }
   },
@@ -723,6 +826,10 @@
     "apiKeys": "API keys",
     "data": "Data and sync",
     "interface": "Interface",
+    "hostList": "Host list",
+    "credentialList": "Credential list",
+    "openHostList": "Host list settings",
+    "openCredentialList": "Credential list settings",
     "appearance": "Appearance",
     "keybindings": "Keybindings",
     "adminGeneral": "General",
@@ -782,6 +889,36 @@
       "hostRows": {
         "label": "Host row choices"
       }
+    },
+    "adminAccess": "Access review",
+    "yourApps": "Your apps",
+    "otherApps": "Other apps",
+    "hostForm": {
+      "label": "Add host form",
+      "description": "Simple shows the address, login, folder and tags. Full shows every option. You can switch inside the form too.",
+      "simple": "Simple",
+      "full": "Full"
+    },
+    "interfaceDefaults": {
+      "title": "Interface defaults",
+      "intro": "Pick what people see when they first sign in. They can still change their own view unless you lock it.",
+      "setFor": "Set for",
+      "everyone": "Everyone",
+      "inherits": "Uses Everyone until you change something",
+      "useEveryone": "Use Everyone",
+      "look": "Starting look",
+      "lookHint": "Simple shows the least. Advanced shows every button.",
+      "simple": "Simple",
+      "balanced": "Balanced",
+      "advanced": "Advanced",
+      "lock": "Lock",
+      "lockHint": "People with this role can't change their look or the apps on their rail.",
+      "apps": "Apps on the rail",
+      "appsHint": "The rest stay in All apps and search.",
+      "appsAdvanced": "Advanced shows every app on the rail.",
+      "saved": "Interface defaults saved",
+      "saveFailed": "Couldn't save interface defaults",
+      "lockedNote": "Your admin picked your look, so it can't be changed here."
     }
   },
   "hostDefaults": {
@@ -861,12 +998,19 @@
     "pickHint": "Everything about a connection lives here, grouped so you can find it.",
     "clearChoice": "Clear",
     "proxyPathTarget": "target",
-    "hostCopyName": "{{name}} (copy)"
+    "hostCopyName": "{{name}} (copy)",
+    "moreOptions": "More options",
+    "moreOptionsHint": "Proxy, jump hosts, keepalive, status checks, notes and the other app sections. Most hosts don't need them.",
+    "folderAndTags": "Folder and tags"
   },
   "permissions": {
     "branding": {
       "title": "Change branding",
       "description": "Set the app name, tagline and logo shown to everyone."
+    },
+    "interfaceDefaults": {
+      "title": "Set interface defaults",
+      "description": "Pick the look and rail apps people start with, for everyone or for each role."
     }
   },
   "onboarding": {
@@ -901,6 +1045,8 @@
     "clickAuto": "The first way to connect",
     "useDefaultNamed": "Default ({{name}})",
     "useDefaultButtons": "Use the default buttons",
-    "perHostHint": "To change them for one host, use Buttons on host rows in its menu."
+    "perHostHint": "To change them for one host, use Buttons on host rows in its menu.",
+    "moreTools": "More tools",
+    "more": "More"
   }
 }

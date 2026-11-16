@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.1.3
+
+### Added
+
+- All apps at the bottom of the rail: in Simple and Balanced the rail keeps the core panels and the apps you pin, and every other app is one click away there. Pin, unpin or open an app's settings from it or with a right click
+- Interface defaults in Settings: admins pick the look and the rail apps people start with, for everyone or per role, and can lock them
+- Add host form setting in Settings, Host list: start the add host form short or with every option
+- Settings lists the apps on your rail first, then the other apps
+- Desktop app: a Close to tray switch in Settings, Interface. Turn it off to quit Termix when you close the window
+- Admin settings, General: a switch to trust new host keys without a prompt, for plugins and schedules that connect with nobody to ask
+- New API keys: pick read only, actions, run actions or full access, and an expiry or never. Left as is, a key is read only and works for 90 days
+- Making someone an admin or turning off password login says when the change waits for the other admins
+- Users can be turned off and back on from the user page, and new SSO accounts can wait for approval. The user list filters by active, turned off and waiting
+- Invite links: make a link with a role, an expiry and a number of uses, even with sign up off
+- Access review page: every host, folder and credential share in one list, with filters and CSV export, also on each user's page
+- Display name and email for each account, set by the user or an admin
+- Admin settings, Accounts and access: turn off admins opening every user's hosts, and approve new SSO accounts
+- People with a helpdesk or auditor role see the users, sessions, access review and audit log pages they are allowed to use
+
+### Changed
+
+- The add host form starts with the address, login, folder and tags. More options shows the rest
+- The host menu starts with three ways to open the host. Other tools are under More tools, and less used actions under More
+- Host and credential panels put search, sort, filter and add on one row. Refresh, import and list settings moved to the menu next to add
+- The tab bar's right dock, full screen and hide buttons are in one View menu
+- A tab's close button is easier to hit: a bigger hover box and a click area that reaches into the tab's edge
+- The dashboard's links and command palette tip moved to a Help menu, and a new dashboard starts with the stats strip, the host list and recent activity
+- The tile picker groups plugin tiles by app
+- Plugin sections in the host editor show their own heading once instead of twice
+- Host list and credential list settings moved to their own pages in Settings. The settings button next to Add host now opens that page
+- Runs in its own process on Termix 26.11.2 and later, with no access to the server beyond what Termix allows it
+- The branding API takes a PNG or JPEG logo. The settings page turns a WebP into a PNG before sending, so WebP logos still work there
+- Needs Termix 26.11.2 or newer
+- Usage bars and health badges other plugins add to dashboard host rows are drawn from plain values, with no frame per host, so a long host list loads faster (needs Termix 26.11.2)
+
+### Fixed
+
+- Host rows show status dots other plugins add, like the site status of a host mirrored from another Termix
+
 ## 1.1.2
 
 ### Added

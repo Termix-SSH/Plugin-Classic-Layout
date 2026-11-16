@@ -12,6 +12,7 @@ import {
   revokeAllUserSessions,
   createRole,
   adminCreateUser,
+  isAdminHoldTicket,
   makeUserAdmin,
   removeAdminStatus,
   getRegistrationAllowed,
@@ -44,6 +45,7 @@ import {
   type AdminSection,
   type Host,
   getDatabaseTransferUrl,
+  usePermissions,
 } from "@termix-ssh/plugin-sdk/ui";
 import { usePluginApi, useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useState, useEffect, useRef } from "react";
@@ -77,6 +79,10 @@ import {
 } from "./AdminUserDialogs";
 import { AdminUserManagePanel } from "./AdminUserManagePanel";
 import { AdminBrandingSection } from "./AdminBrandingSection";
+import { AdminInvitesSection } from "./AdminInvitesSection";
+import { AdminAccessReviewSection } from "./AdminAccessReviewSection";
+import { AdminAccountSettingsSection } from "./AdminAccountSettingsSection";
+import { hasUserAdminApi, type UserStatusFilter } from "./user-admin-api";
 
 type ApiErrorLike = {
   response?: {
@@ -91,6 +97,26 @@ function apiErrorMessage(error: unknown, fallback: string) {
 }
 
 const USERS_PAGE_SIZE = 25;
+// Older SDK types don't list it yet.
+const ACCESS_SECTION = "access" as AdminSection;
+
+/** Fields a 26.11.2 core adds to the user list; absent on older ones. */
+function readAccountFields(user: object) {
+  const extra = user as {
+    display_name?: string | null;
+    email?: string | null;
+    disabled?: boolean;
+    disabled_reason?: string | null;
+    last_login_at?: string | null;
+  };
+  return {
+    displayName: extra.display_name ?? null,
+    email: extra.email ?? null,
+    disabled: !!extra.disabled,
+    disabledReason: extra.disabled_reason ?? null,
+    lastLoginAt: extra.last_login_at ?? null,
+  };
+}
 
 export function AdminSettingsPanel({
   onEditingChange,
@@ -171,7 +197,7 @@ export function AdminSettingsPanel({
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyUserId, setNewKeyUserId] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
-  const [newKeyScope, setNewKeyScope] = useState("");
+  const [newKeyScope, setNewKeyScope] = useState("read");
   const [newKeyLoading, setNewKeyLoading] = useState(false);
   const [createdKeyToken, setCreatedKeyToken] = useState<string | null>(null);
 
@@ -189,6 +215,11 @@ export function AdminSettingsPanel({
   const [userSearch, setUserSearch] = useState("");
   const [userPage, setUserPage] = useState(0);
   const [userTotal, setUserTotal] = useState(0);
+  const [userStatus, setUserStatus] = useState<UserStatusFilter | "">("");
+  const { has, isAdmin } = usePermissions();
+  const canManageUsers = has("admin.users.manage");
+  // Cores before 26.11.2 can't filter users by state.
+  const canFilterStatus = hasUserAdminApi("disableUser");
   const usersRequestRef = useRef(0);
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -205,12 +236,12 @@ export function AdminSettingsPanel({
   useEffect(() => {
     const timer = setTimeout(loadUsers, userSearch ? 250 : 0);
     return () => clearTimeout(timer);
-  }, [userSearch, userPage]);
+  }, [userSearch, userPage, userStatus]);
 
   // A new search term starts again from the first page.
   useEffect(() => {
     setUserPage(0);
-  }, [userSearch]);
+  }, [userSearch, userStatus]);
 
   // The panel stays mounted across Settings pages, so an open user view
   // would otherwise replace whichever section is picked next.
@@ -242,7 +273,8 @@ export function AdminSettingsPanel({
       search: userSearch.trim() || undefined,
       limit: USERS_PAGE_SIZE,
       offset: userPage * USERS_PAGE_SIZE,
-    })
+      ...(userStatus ? { status: userStatus } : {}),
+    } as Parameters<typeof getUserList>[0])
       .then(({ users: u, total }) => {
         // A slower answer for an older search must not replace a newer one.
         if (request !== usersRequestRef.current) return;
@@ -255,6 +287,7 @@ export function AdminSettingsPanel({
             passwordHash: user.password_hash,
             dataUnlocked: user.data_unlocked,
             secondFactorEnabled: user.second_factor_enabled,
+            ...readAccountFields(user),
           })),
         );
         setUserTotal(total ?? u.length);
@@ -364,7 +397,11 @@ export function AdminSettingsPanel({
     const newVal = !allowPasswordLogin;
     setAllowPasswordLogin(newVal);
     try {
-      await updatePasswordLoginAllowed(newVal);
+      const answer: unknown = await updatePasswordLoginAllowed(newVal);
+      if (isAdminHoldTicket(answer)) {
+        setAllowPasswordLogin(!newVal);
+        toast.info(t("admin.changeHeld", { minutes: answer.minutes }));
+      }
     } catch (e) {
       setAllowPasswordLogin(!newVal);
       const msg = (e as ApiErrorLike).response?.data?.error;
@@ -555,7 +592,11 @@ export function AdminSettingsPanel({
           prev.map((u) => (u.id === user.id ? { ...u, isAdmin: false } : u)),
         );
       } else {
-        await makeUserAdmin(user.id);
+        const answer = await makeUserAdmin(user.id);
+        if (isAdminHoldTicket(answer)) {
+          toast.info(t("admin.changeHeld", { minutes: answer.minutes }));
+          return;
+        }
         setEditUserTarget((prev) => (prev ? { ...prev, isAdmin: true } : prev));
         setUsers((prev) =>
           prev.map((u) => (u.id === user.id ? { ...u, isAdmin: true } : u)),
@@ -643,15 +684,20 @@ export function AdminSettingsPanel({
       const created: CreatedApiKey = await createApiKey(
         newKeyName.trim(),
         newKeyUserId.trim(),
-        newKeyExpiry ? new Date(newKeyExpiry).toISOString() : undefined,
-        newKeyScope ? [newKeyScope] : null,
+        // Blank keeps the server's 90 days.
+        newKeyExpiry === "never"
+          ? null
+          : newKeyExpiry
+            ? new Date(newKeyExpiry).toISOString()
+            : undefined,
+        [newKeyScope || "read"],
       );
       setApiKeys((prev) => [{ ...created, isActive: true }, ...prev]);
       setCreatedKeyToken(created.token);
       setNewKeyName("");
       setNewKeyUserId("");
       setNewKeyExpiry("");
-      setNewKeyScope("");
+      setNewKeyScope("read");
       toast.success(t("admin.apiKeyCreatedSuccess", { name: created.name }));
     } catch (e: unknown) {
       toast.error(apiErrorMessage(e, t("admin.apiKeyCreateFailed")));
@@ -772,6 +818,14 @@ export function AdminSettingsPanel({
           setUsers((prev) => prev.filter((u) => u.id !== manageUser.id));
           setManageUser(null);
         }}
+        onUserChanged={(changes) => {
+          setManageUser((prev) => (prev ? { ...prev, ...changes } : prev));
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === manageUser.id ? { ...u, ...changes } : u,
+            ),
+          );
+        }}
         onSecondFactorsReset={() => {
           setUsers((prev) =>
             prev.map((u) =>
@@ -820,6 +874,13 @@ export function AdminSettingsPanel({
         handleSaveLogLevel={handleSaveLogLevel}
       />
 
+      {isAdmin && (
+        <AdminAccountSettingsSection
+          open={isOpen("general")}
+          onToggle={() => toggle("general")}
+        />
+      )}
+
       <AdminUsersSection
         open={isOpen("users")}
         onToggle={() => toggle("users")}
@@ -840,6 +901,23 @@ export function AdminSettingsPanel({
         pageSize={USERS_PAGE_SIZE}
         total={userTotal}
         onPageChange={setUserPage}
+        status={userStatus}
+        onStatusChange={canFilterStatus ? setUserStatus : undefined}
+        canManage={isAdmin}
+      />
+
+      <AdminInvitesSection
+        open={isOpen("users")}
+        onToggle={() => toggle("users")}
+        roles={roles}
+        canManage={canManageUsers}
+        isAdmin={isAdmin}
+      />
+
+      <AdminAccessReviewSection
+        open={isOpen(ACCESS_SECTION)}
+        onToggle={() => toggle(ACCESS_SECTION)}
+        roles={roles}
       />
 
       <AdminSessionsSection

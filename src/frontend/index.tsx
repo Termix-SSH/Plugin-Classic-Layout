@@ -15,7 +15,33 @@ import { HostRowsStep, hostPageAvailable } from "./onboarding/HostRowsStep";
 import { DashboardTabType, ManageTabType, SettingsTabType } from "./tabs";
 
 export function activate(app: TermixApp): void {
-  app.declareActionSlot({ id: "tabbar.actions", accepts: ["component"] });
+  // Plugin buttons fill the tab bar's height ("bar" is new in Termix 26.11.2).
+  app.declareActionSlot({
+    id: "tabbar.actions",
+    accepts: ["component"],
+    fit: "bar" as "inline",
+  });
+  // Plain values per host row; components only from plugins not moved yet.
+  app.declareActionSlot({
+    id: "dashboard.hostRow",
+    accepts: ["data", "component"],
+    shapes: ["bars", "stat", "text"],
+    rows: "host",
+    fit: "inline",
+  });
+  app.declareActionSlot({
+    id: "credentials.badges",
+    accepts: ["data"],
+    shapes: ["badge", "text"],
+    rows: "credential",
+  });
+  app.declareActionSlot({
+    id: "dashboard.hostRowBadge",
+    accepts: ["data", "component"],
+    shapes: ["badge"],
+    rows: "host",
+    fit: "inline",
+  });
   app.registerLayout({
     id: "classic",
     label: "layout.name",

@@ -115,22 +115,27 @@ describe("default dashboard grid", () => {
     return { left, right };
   };
 
-  it("puts the strips across the top and ends both sides on one line", () => {
+  it("puts the stats strip across the top and ends both sides on one line", () => {
     const grid = defaultGrid([]);
-    expect(grid.slice(0, 2).map((c) => [c.id, c.w])).toEqual([
-      ["stats_bar", 12],
-      ["counters_bar", 12],
+    expect(grid.map((c) => c.id)).toEqual([
+      "stats_bar",
+      "host_status",
+      "recent_activity",
     ]);
+    expect(grid[0].w).toBe(12);
     const { left, right } = bottoms(grid);
     expect(left).toBe(right);
   });
 
-  it("gives Needs attention a row with Quick actions beside it", () => {
+  it("puts Needs attention above the host list, with activity beside both", () => {
     const grid = defaultGrid(["attention", "other"]);
     const attention = grid.find((c) => c.id === "attention")!;
-    const quick = grid.find((c) => c.id === "quick_actions")!;
+    const hosts = grid.find((c) => c.id === "host_status")!;
+    const activity = grid.find((c) => c.id === "recent_activity")!;
     expect(attention).toMatchObject({ x: 0, w: 8 });
-    expect(quick).toMatchObject({ x: 8, w: 4, y: attention.y, h: attention.h });
+    expect(hosts.y).toBe(attention.y + (attention.h ?? 0));
+    expect(activity).toMatchObject({ x: 8, w: 4, y: attention.y });
+    expect(grid.some((c) => c.id === "quick_actions")).toBe(false);
     expect(grid.some((c) => c.id === "other")).toBe(false);
     const { left, right } = bottoms(grid);
     expect(left).toBe(right);
