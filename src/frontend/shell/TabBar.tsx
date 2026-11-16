@@ -484,7 +484,14 @@ export function TabBar({
                 )}
                 {tab.type !== "dashboard" && renamingTabId !== tab.id && (
                   <div
-                    className={`flex items-center gap-0.5 ml-1 ${active ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100"}`}
+                    data-tab-actions=""
+                    className={
+                      active
+                        ? "flex items-center gap-0.5 ml-1"
+                        : // Inactive tabs leave the room to the label and show
+                          // their buttons over its end on hover.
+                          "absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 bg-surface pl-1 opacity-0 pointer-events-none group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto group-focus-within/tab:opacity-100 group-focus-within/tab:pointer-events-auto"
+                    }
                   >
                     {isConnectionTab(tab.type) && (
                       <button
@@ -533,7 +540,9 @@ export function TabBar({
                       }}
                       title={t("nav.close")}
                       aria-label={t("nav.close")}
-                      className="flex items-center justify-center size-5 md:size-4 rounded-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                      // Small to look at, but the click area reaches into the
+                      // tab's padding so it is easy to hit.
+                      className="relative flex items-center justify-center size-5 md:size-4 rounded-sm transition-colors text-muted-foreground hover:text-foreground hover:bg-muted before:absolute before:-inset-y-2.5 before:-left-1 before:-right-3 before:content-['']"
                     >
                       <X className="size-3" />
                     </button>

@@ -25,6 +25,7 @@
 - The host menu starts with three ways to open the host. Other tools are under More tools, and less used actions under More
 - Host and credential panels put search, sort, filter and add on one row. Refresh, import and list settings moved to the menu next to add
 - The tab bar's right dock, full screen and hide buttons are in one View menu
+- A tab's close button is easier to hit, and tabs you are not on leave its room to their name and show it on hover
 - The dashboard's links and command palette tip moved to a Help menu, and a new dashboard starts with the stats strip, the host list and recent activity
 - The tile picker groups plugin tiles by app
 - Plugin sections in the host editor show their own heading once instead of twice
