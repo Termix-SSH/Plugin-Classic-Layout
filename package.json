@@ -17,7 +17,7 @@
     "@tanstack/react-virtual": "3.14.26",
     "jpeg-js": "^0.4.4",
     "lucide-react": "^1.72.0",
-    "motion": "^14.10.1",
+    "motion": "^14.13.0",
     "pngjs": "^7.0.0"
   },
   "devDependencies": {
