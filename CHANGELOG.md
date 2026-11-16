@@ -11,6 +11,7 @@
 
 ### Changed
 
+- Host list and credential list settings moved to their own pages in Settings. The settings button next to Add host now opens that page
 - Runs in its own process on Termix 26.11.2 and later, with no access to the server beyond what Termix allows it
 - The branding API takes a PNG or JPEG logo. The settings page turns a WebP into a PNG before sending, so WebP logos still work there
 - Needs Termix 26.11.2 or newer

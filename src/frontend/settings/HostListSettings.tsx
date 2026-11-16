@@ -1,6 +1,5 @@
 import {
   Select2,
-  InlineView,
   actionOrder,
   useHostActions,
   SectionCard,
@@ -9,7 +8,6 @@ import {
   type HostClickBehavior,
   type HostDensity,
   type HostRowFields,
-  type HostSidebarPreferences,
   type HostTrayTrigger,
 } from "@termix-ssh/plugin-sdk/ui";
 import {
@@ -21,8 +19,9 @@ import {
   HOST_PAGE_TAB,
   hostToolsMode,
   showsInBar,
-} from "./tree/host-bar-actions";
-import { stripedRows } from "./striped-rows";
+} from "../sidebar/tree/host-bar-actions";
+import { stripedRows } from "../sidebar/striped-rows";
+import { useHostSidebarPreferences } from "../sidebar/tree/hooks/useHostSidebarPreferences";
 
 const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
   { key: "showAddress" },
@@ -33,22 +32,10 @@ const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
   { key: "showBadges" },
 ];
 
-export function CustomizeSidebarPanel({
-  open,
-  onOpenChange,
-  preferences,
-  update,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  preferences: HostSidebarPreferences;
-  update: (
-    patch:
-      | Partial<HostSidebarPreferences>
-      | ((prev: HostSidebarPreferences) => HostSidebarPreferences),
-  ) => void;
-}) {
+/** The host list's look and click behavior, as a Settings page. */
+export function HostListSettings() {
   const { t } = useTranslation();
+  const { preferences, update } = useHostSidebarPreferences();
   const actions = [...useHostActions()].sort(
     (a, b) => actionOrder(a) - actionOrder(b) || a.id.localeCompare(b.id),
   );
@@ -77,12 +64,7 @@ export function CustomizeSidebarPanel({
     hasHostPage && hostToolsMode(layoutPrefs.values.hostTools) === "only";
 
   return (
-    <InlineView
-      stacked
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t("hosts.customizeSidebar")}
-    >
+    <>
       <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
         {t("hosts.customizeSidebarDescription")}
       </p>
@@ -406,6 +388,6 @@ export function CustomizeSidebarPanel({
       <p className="px-3 py-2 text-[11px] text-muted-foreground/70 leading-snug">
         {t("hosts.customizeSortHint")}
       </p>
-    </InlineView>
+    </>
   );
 }

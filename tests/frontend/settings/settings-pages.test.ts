@@ -47,6 +47,19 @@ describe("settings pages", () => {
     expect(ids(true, false)).toContain("updates");
   });
 
+  it("shows the host and credential list pages to everyone", () => {
+    const ids = visibleSettingsPages(CORE_SETTINGS_PAGES, {
+      isAdmin: false,
+      isElectron: false,
+    }).map((page) => page.id);
+    expect(ids).toContain("host-list");
+    expect(ids).toContain("credential-list");
+    expect(SETTINGS_SEARCH_INDEX["host-list"]).toContain("hosts.stripedRows");
+    expect(SETTINGS_SEARCH_INDEX["credential-list"]).toContain(
+      "credentials.showCredentialTags",
+    );
+  });
+
   it("finds a page by a label shown on it, not only its name", () => {
     const hits = searchSettingsPages(CORE_SETTINGS_PAGES, "theme", translate);
     expect(hits.some((hit) => hit.page.id === "appearance")).toBe(true);

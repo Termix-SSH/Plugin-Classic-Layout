@@ -93,6 +93,17 @@ function profileSections() {
       ...keysIn(functionBody(source, "NewApiKeyDialog")),
     ]),
   ];
+  for (const [id, file] of [
+    ["host-list", "HostListSettings.tsx"],
+    ["credential-list", "CredentialListSettings.tsx"],
+  ]) {
+    out[id] = keysIn(
+      fs.readFileSync(
+        path.join(ROOT, "src", "frontend", "settings", file),
+        "utf8",
+      ),
+    );
+  }
   out.keybindings = keysIn(
     fs.readFileSync(
       path.join(ROOT, "src", "frontend", "settings", "KeybindingsSettings.tsx"),

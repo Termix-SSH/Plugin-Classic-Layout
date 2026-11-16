@@ -18,7 +18,7 @@ With many plugins on, a host row can carry a lot of buttons. When a plugin offer
 - Buttons and a host page button: the same, plus one button for the host page, and tools open inside the host page.
 - Host page only: no buttons on rows, and a click on a host opens its page.
 
-Change it later in Customize sidebar, under Open host tools in, and the Connect bar list.
+Change it later in Settings, Host list, under Open host tools in, and the Connect bar list. The settings button next to Add host opens that page.
 
 ## Branding
 
