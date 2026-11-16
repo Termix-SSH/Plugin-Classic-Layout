@@ -24,6 +24,17 @@ const api = vi.hoisted(() => ({
   getUserRoles: vi.fn(async () => ({ roles: [] as unknown[] })),
   assignRoleToUser: vi.fn(async () => ({})),
   removeRoleFromUser: vi.fn(async () => ({})),
+  disableUser: vi.fn(async () => ({ disabled: true })),
+  enableUser: vi.fn(async () => ({ disabled: false })),
+  adminUpdateUserProfile: vi.fn(async () => ({})),
+  getAccessReview: vi.fn(async () => ({ shares: [], total: 0 })),
+  downloadAccessReviewCsv: vi.fn(async () => new Blob()),
+  usePermissions: vi.fn(() => ({
+    permissions: ["*"],
+    isAdmin: true,
+    loaded: true,
+    has: () => true,
+  })),
 }));
 
 vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
@@ -248,6 +259,36 @@ describe("AdminUserManagePanel", () => {
       expect(api.deleteUser).toHaveBeenCalledWith("bob");
       expect(onUserDeleted).toHaveBeenCalled();
     });
+  });
+
+  it("turns an account off after confirmation", async () => {
+    renderPanel(makeUser({}));
+    await userEvent.click(screen.getByText("admin.disableUser"));
+    await userEvent.click(screen.getByText("common.delete"));
+    await waitFor(() => expect(api.disableUser).toHaveBeenCalledWith("u2"));
+  });
+
+  it("shows only account tabs to a helpdesk role", async () => {
+    api.usePermissions.mockReturnValue({
+      permissions: ["admin.users.view", "admin.users.manage"],
+      isAdmin: false,
+      loaded: true,
+      has: () => true,
+    });
+    try {
+      renderPanel(makeUser({}));
+      expect(screen.queryByText("admin.manageTabHosts")).toBeNull();
+      expect(screen.getByText("admin.manageTabAccess")).toBeTruthy();
+      await userEvent.click(screen.getByText("admin.manageTabDanger"));
+      expect(screen.queryByText("admin.deleteSuccessorMe")).toBeNull();
+    } finally {
+      api.usePermissions.mockReturnValue({
+        permissions: ["*"],
+        isAdmin: true,
+        loaded: true,
+        has: () => true,
+      });
+    }
   });
 
   it("blocks deleting admin accounts", async () => {

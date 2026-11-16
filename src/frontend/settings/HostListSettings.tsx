@@ -1,6 +1,7 @@
 import {
   Select2,
-  InlineView,
+  useUiPreference,
+  useUiPreferencesContext,
   actionOrder,
   useHostActions,
   SectionCard,
@@ -9,7 +10,6 @@ import {
   type HostClickBehavior,
   type HostDensity,
   type HostRowFields,
-  type HostSidebarPreferences,
   type HostTrayTrigger,
 } from "@termix-ssh/plugin-sdk/ui";
 import {
@@ -21,8 +21,9 @@ import {
   HOST_PAGE_TAB,
   hostToolsMode,
   showsInBar,
-} from "./tree/host-bar-actions";
-import { stripedRows } from "./striped-rows";
+} from "../sidebar/tree/host-bar-actions";
+import { stripedRows } from "../sidebar/striped-rows";
+import { useHostSidebarPreferences } from "../sidebar/tree/hooks/useHostSidebarPreferences";
 
 const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
   { key: "showAddress" },
@@ -33,22 +34,12 @@ const ROW_FIELDS: { key: keyof HostRowFields; dependsOnAddress?: boolean }[] = [
   { key: "showBadges" },
 ];
 
-export function CustomizeSidebarPanel({
-  open,
-  onOpenChange,
-  preferences,
-  update,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  preferences: HostSidebarPreferences;
-  update: (
-    patch:
-      | Partial<HostSidebarPreferences>
-      | ((prev: HostSidebarPreferences) => HostSidebarPreferences),
-  ) => void;
-}) {
+/** The host list's look and click behavior, as a Settings page. */
+export function HostListSettings() {
   const { t } = useTranslation();
+  const { preferences, update } = useHostSidebarPreferences();
+  const ui = useUiPreferencesContext();
+  const hostForm = useUiPreference("hostEditor", "mode");
   const actions = [...useHostActions()].sort(
     (a, b) => actionOrder(a) - actionOrder(b) || a.id.localeCompare(b.id),
   );
@@ -77,12 +68,7 @@ export function CustomizeSidebarPanel({
     hasHostPage && hostToolsMode(layoutPrefs.values.hostTools) === "only";
 
   return (
-    <InlineView
-      stacked
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t("hosts.customizeSidebar")}
-    >
+    <>
       <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
         {t("hosts.customizeSidebarDescription")}
       </p>
@@ -90,6 +76,25 @@ export function CustomizeSidebarPanel({
         title={t("hosts.customizeDensityTitle")}
         icon={<Rows3 className="size-3.5" />}
       >
+        <SettingRow
+          label={t("settings.hostForm.label")}
+          description={t("settings.hostForm.description")}
+        >
+          <Select2
+            value={hostForm}
+            onChange={(e) =>
+              ui?.setOverride(
+                "hostEditor",
+                "mode",
+                e.target.value as "simple" | "full",
+              )
+            }
+            className="h-8 border border-border bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="simple">{t("settings.hostForm.simple")}</option>
+            <option value="full">{t("settings.hostForm.full")}</option>
+          </Select2>
+        </SettingRow>
         <SettingRow
           label={t("hosts.customizeDensityTitle")}
           description={
@@ -406,6 +411,6 @@ export function CustomizeSidebarPanel({
       <p className="px-3 py-2 text-[11px] text-muted-foreground/70 leading-snug">
         {t("hosts.customizeSortHint")}
       </p>
-    </InlineView>
+    </>
   );
 }

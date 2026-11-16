@@ -1,41 +1,23 @@
 import {
   Select2,
-  InlineView,
   SectionCard,
   SettingRow,
   FakeSwitch,
   CREDENTIAL_ROW_FIELD_KEYS,
   type CredentialDensity,
-  type CredentialSidebarPreferences,
   type CredentialTrayTrigger,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { ListChecks, Rows3, SquareStack } from "lucide-react";
+import { useCredentialSidebarPreferences } from "../sidebar/credential-tree/hooks/useCredentialSidebarPreferences";
 
-export function CustomizeCredentialsSidebarPanel({
-  open,
-  onOpenChange,
-  preferences,
-  update,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  preferences: CredentialSidebarPreferences;
-  update: (
-    patch:
-      | Partial<CredentialSidebarPreferences>
-      | ((prev: CredentialSidebarPreferences) => CredentialSidebarPreferences),
-  ) => void;
-}) {
+/** The credential list's look, as a Settings page. */
+export function CredentialListSettings() {
   const { t } = useTranslation();
+  const { preferences, update } = useCredentialSidebarPreferences();
 
   return (
-    <InlineView
-      stacked
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t("credentials.customizeSidebar")}
-    >
+    <>
       <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
         {t("credentials.customizeSidebarDescription")}
       </p>
@@ -151,6 +133,6 @@ export function CustomizeCredentialsSidebarPanel({
       <p className="px-3 py-2 text-[11px] text-muted-foreground/70 leading-snug">
         {t("credentials.customizeSortHint")}
       </p>
-    </InlineView>
+    </>
   );
 }

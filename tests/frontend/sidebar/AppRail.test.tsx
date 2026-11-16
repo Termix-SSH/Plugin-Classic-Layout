@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Bell, Boxes } from "lucide-react";
 import { AppRail } from "../../../src/frontend/sidebar/AppRail";
@@ -69,7 +75,31 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   return merged;
 });
 
+// Every app on the rail unless a test unpins some.
+const pins = vi.hoisted(() => ({
+  appsMenu: false,
+  locked: false,
+  pinned: new Set<string>(),
+  toggle: vi.fn(),
+}));
+vi.mock("../../../src/frontend/rail-pins", () => ({
+  useRailPins: () => ({
+    appsMenu: pins.appsMenu,
+    locked: pins.locked,
+    isPinned: (item: { id: string; pluginId?: string }) =>
+      !pins.appsMenu || !item.pluginId || pins.pinned.has(item.id),
+    toggle: pins.toggle,
+  }),
+}));
+vi.mock("../../../src/frontend/settings/FeatureSettingsSections", () => ({
+  useFeatureSettings: () => [{ id: "demo" }],
+}));
+
 afterEach(() => {
+  pins.appsMenu = false;
+  pins.locked = false;
+  pins.pinned = new Set();
+  pins.toggle.mockReset();
   resetRegisteredRailItems();
   localStorage.clear();
   delete (window as { IS_ELECTRON?: boolean }).IS_ELECTRON;
@@ -253,6 +283,107 @@ describe("AppRail", () => {
     await userEvent.click(screen.getByText("nav.openSettings"));
     expect(onOpenNavigationSettings).toHaveBeenCalled();
     expect(onOpenSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe("AppRail apps menu", () => {
+  function registerTwo() {
+    registerRailItem({
+      id: "fleets",
+      icon: Boxes,
+      labelKey: "test.fleets",
+      pluginId: "demo",
+    });
+    registerRailItem({
+      id: "inbox",
+      icon: Bell,
+      labelKey: "test.inbox",
+      pluginId: "demo",
+    });
+  }
+
+  it("keeps unpinned apps in All apps and opens one from there", async () => {
+    pins.appsMenu = true;
+    pins.pinned = new Set(["fleets"]);
+    registerTwo();
+    const onRailClick = renderRail();
+    expect(screen.getByTitle("test.fleets")).toBeTruthy();
+    expect(screen.queryByTitle("test.inbox")).toBeNull();
+
+    await userEvent.click(screen.getByTitle("nav.allApps"));
+    const dialog = screen.getByRole("dialog", { name: "nav.allApps" });
+    await userEvent.click(within(dialog).getByText("test.inbox"));
+    expect(onRailClick).toHaveBeenCalledWith("inbox");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("pins an app from All apps", async () => {
+    pins.appsMenu = true;
+    registerTwo();
+    renderRail();
+    await userEvent.click(screen.getByTitle("nav.allApps"));
+    const dialog = screen.getByRole("dialog", { name: "nav.allApps" });
+    await userEvent.click(within(dialog).getAllByLabelText("nav.pinToRail")[0]);
+    expect(pins.toggle).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "fleets" }),
+      expect.any(Array),
+    );
+  });
+
+  it("finds an app by name", async () => {
+    pins.appsMenu = true;
+    registerTwo();
+    renderRail();
+    await userEvent.click(screen.getByTitle("nav.allApps"));
+    const dialog = screen.getByRole("dialog", { name: "nav.allApps" });
+    await userEvent.type(within(dialog).getByRole("textbox"), "inb");
+    expect(within(dialog).queryByText("test.fleets")).toBeNull();
+    expect(within(dialog).getByText("test.inbox")).toBeTruthy();
+  });
+
+  it("hides the pin buttons when the admin locked the rail", async () => {
+    pins.appsMenu = true;
+    pins.locked = true;
+    registerTwo();
+    renderRail();
+    await userEvent.click(screen.getByTitle("nav.allApps"));
+    expect(screen.queryByLabelText("nav.pinToRail")).toBeNull();
+    expect(screen.getByText("nav.allAppsLockedHint")).toBeTruthy();
+  });
+
+  it("shows no All apps button when every app is on the rail", () => {
+    registerTwo();
+    renderRail();
+    expect(screen.queryByTitle("nav.allApps")).toBeNull();
+    expect(screen.getByTitle("test.inbox")).toBeTruthy();
+  });
+
+  it("opens an app's settings and unpins it from the rail menu", async () => {
+    pins.appsMenu = true;
+    pins.pinned = new Set(["fleets"]);
+    registerTwo();
+    const onOpenAppSettings = vi.fn();
+    render(
+      <AppRail
+        railView="hosts"
+        sidebarOpen={false}
+        username="alice"
+        isAdmin={false}
+        onRailClick={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onOpenNavigationSettings={vi.fn()}
+        onOpenAppSettings={onOpenAppSettings}
+        onLogout={vi.fn()}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByTitle("test.fleets"));
+    expect(screen.queryByText("nav.hideFromRail")).toBeNull();
+    await userEvent.click(screen.getByText("nav.appSettings"));
+    expect(onOpenAppSettings).toHaveBeenCalledWith("demo");
+
+    fireEvent.contextMenu(screen.getByTitle("test.fleets"));
+    await userEvent.click(screen.getByText("nav.unpinFromRail"));
+    expect(pins.toggle).toHaveBeenCalled();
   });
 });
 
