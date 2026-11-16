@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -182,7 +183,7 @@ describe("HostItem density parity", () => {
     "hides an empty Copy Link submenu in %s density",
     (density) => {
       renderHostItem(density, { menuOpen: true });
-      expect(screen.getByText("common.connect")).toBeTruthy();
+      expect(screen.getByText("hosts.copyAddress")).toBeTruthy();
       // No plugin offers a link to copy here, so the submenu is left out.
       expect(screen.queryByText("hosts.copyLink")).toBeNull();
     },
@@ -210,7 +211,7 @@ describe("HostItem density parity", () => {
     expect(hostRow).toBeTruthy();
     fireEvent.contextMenu(hostRow!, { clientX: 120, clientY: 80 });
 
-    expect(screen.getByText("common.connect")).toBeTruthy();
+    expect(screen.getByText("hostTools.more")).toBeTruthy();
     expect(screen.getAllByText("hosts.editHostAction").length).toBeGreaterThan(
       0,
     );
@@ -226,6 +227,35 @@ describe("HostItem density parity", () => {
       expect(screen.getByTitle("hosts.moreOptions")).toBeTruthy();
     },
   );
+
+  it("puts three ways to open the host on top and the rest under More tools", () => {
+    const Icon = (() => null) as never;
+    const disposers = ["one", "two", "three", "four", "five"].map((id, i) =>
+      registerHostAction({
+        id,
+        titleKey: `fixture.${id}`,
+        icon: Icon,
+        kind: "connect",
+        tabType: id,
+        order: i + 1,
+        when: () => true,
+      }),
+    );
+    try {
+      renderHostItem("comfortable", { menuOpen: true });
+      const menu = screen.getByRole("menu");
+      const top = within(menu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent);
+      expect(top.filter((text) => text?.startsWith("fixture."))).toHaveLength(
+        3,
+      );
+      expect(within(menu).getByText("hostTools.moreTools")).toBeTruthy();
+      expect(within(menu).queryByText("fixture.five")).toBeNull();
+    } finally {
+      disposers.forEach((dispose) => dispose());
+    }
+  });
 
   it.each(["comfortable", "compact"] as const)(
     "exposes plugin connect actions as quick-launch buttons in %s density",

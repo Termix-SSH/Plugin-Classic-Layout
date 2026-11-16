@@ -48,6 +48,13 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
     async (importOriginal) => ({
       ...(await importOriginal<typeof import("@termix-ssh/plugin-sdk/ui")>()),
       ComponentSlot: ({ slotId }: { slotId: string }) => <span>{slotId}</span>,
+      DataSlot: ({
+        slotId,
+        fallback,
+      }: {
+        slotId: string;
+        fallback?: unknown;
+      }) => (slotId === "dashboard.hostRow" ? <span>{slotId}</span> : fallback),
     }),
   ];
   for (const factory of factories) {

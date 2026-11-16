@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Termix-SSH/Termix/main/scripts/authz/authz.schema.json",
+  "seed": [],
+  "routes": {
+    "GET /plugin-api/classic-layout/branding": {
+      "access": "user",
+      "permission": "classic-layout.branding"
+    },
+    "PATCH /plugin-api/classic-layout/branding": {
+      "access": "user",
+      "permission": "classic-layout.branding"
+    },
+    "GET /plugin-api/classic-layout/interface-defaults": {
+      "access": "user"
+    },
+    "PUT /plugin-api/classic-layout/interface-defaults": {
+      "access": "user",
+      "permission": "classic-layout.interface-defaults"
+    }
+  }
+}

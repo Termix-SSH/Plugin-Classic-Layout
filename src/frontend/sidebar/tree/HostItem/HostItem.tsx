@@ -40,9 +40,12 @@ import {
   hostActionsFor,
   hostBadgesFor,
   hostMenuItemsFor,
+  hostStatusIndicatorsFor,
   useHostActions,
   useHostBadges,
   useHostContextMenuItems,
+  useHostStatusIndicators,
+  HostDataItems,
   type HostActionDef,
   shell,
   type TabShellCallbacks,
@@ -308,6 +311,10 @@ export function HostItem({
     clickAction?: string;
   }>();
   const badges = hostBadgesFor(useHostBadges(), host);
+  const statusIndicators = hostStatusIndicatorsFor(
+    useHostStatusIndicators(),
+    host,
+  );
   const pluginMenuItems = hostMenuItemsFor(useHostContextMenuItems(), host);
   const splitTargets = useSplitTargets();
   const statusScheme = useStatusColorScheme();
@@ -540,6 +547,16 @@ export function HostItem({
     openHostTab(connectAction, options);
   };
 
+  // The menu leads with three ways to open the host: the row's own buttons
+  // first, then the rest in order. Everything else is under More tools.
+  const menuTopEntries = [
+    ...rowEntries.filter((entry) => entry.tray),
+    ...rowEntries.filter((entry) => !entry.tray),
+  ].slice(0, 3);
+  const menuRestEntries = rowEntries.filter(
+    (entry) => !menuTopEntries.includes(entry),
+  );
+
   const connectionButtons = (
     <>
       {trayEntries.map((entry, index) => {
@@ -695,14 +712,51 @@ export function HostItem({
           align="start"
           className="text-xs w-auto min-w-44 max-w-72 whitespace-nowrap"
         >
-          {!pageOnly && (
+          {!pageOnly &&
+            menuTopEntries.map((entry) => {
+              const Icon = entry.icon;
+              return entry.items ? (
+                <DropdownMenuSub key={entry.key}>
+                  <DropdownMenuSubTrigger>
+                    <Icon className="size-3.5 mr-2" />
+                    {entry.label}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {entry.items.map((item) => (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          item.run();
+                        }}
+                      >
+                        <Icon className="size-3.5 mr-2" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ) : (
+                <DropdownMenuItem
+                  key={entry.key}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    entry.run();
+                  }}
+                >
+                  <Icon className="size-3.5 mr-2" />
+                  {entry.label}
+                </DropdownMenuItem>
+              );
+            })}
+          {!pageOnly && menuRestEntries.length > 0 && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Terminal className="size-3.5 mr-2" />
-                {t("common.connect")}
+                {t("hostTools.moreTools")}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                {rowEntries.map((entry) => {
+                {menuRestEntries.map((entry) => {
                   const Icon = entry.icon;
                   return entry.items ? (
                     <DropdownMenuSub key={entry.key}>
@@ -738,89 +792,6 @@ export function HostItem({
                     </DropdownMenuItem>
                   );
                 })}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
-          {!pageOnly && canChangeHostRows() && clickable.length > 1 && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <MousePointerClick className="size-3.5 mr-2" />
-                {t("hostTools.clickOpens")}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup
-                  value={pickFrom(rowPrefs?.click)?.key ?? ""}
-                  onValueChange={(value) =>
-                    changeHostRow(String(host.id), {
-                      click: value || undefined,
-                    })
-                  }
-                >
-                  <DropdownMenuRadioItem
-                    value=""
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {t("hostTools.useDefaultNamed", {
-                      name: defaultClickLabel,
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuSeparator />
-                  {clickable.map((entry) => {
-                    const Icon = entry.icon;
-                    return (
-                      <DropdownMenuRadioItem
-                        key={entry.key}
-                        value={entry.key}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Icon className="size-3.5 mr-2" />
-                        {entry.label}
-                      </DropdownMenuRadioItem>
-                    );
-                  })}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
-          {!pageOnly && canChangeHostRows() && rowEntries.length > 0 && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <PanelTop className="size-3.5 mr-2" />
-                {t("hostTools.rowButtons")}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {rowEntries.map((entry) => {
-                  const Icon = entry.icon;
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={entry.key}
-                      checked={entry.tray}
-                      onSelect={(e) => e.preventDefault()}
-                      onClick={(e) => e.stopPropagation()}
-                      onCheckedChange={(checked) =>
-                        changeHostRow(String(host.id), {
-                          bar: {
-                            ...rowPrefs?.bar,
-                            [entry.key]: checked === true,
-                          },
-                        })
-                      }
-                    >
-                      <Icon className="size-3.5 mr-2" />
-                      {entry.label}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={!rowPrefs?.bar}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    changeHostRow(String(host.id), { bar: undefined });
-                  }}
-                >
-                  {t("hostTools.useDefaultButtons")}
-                </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           )}
@@ -945,21 +916,6 @@ export function HostItem({
               {t("hosts.shareHost")}
             </DropdownMenuItem>
           )}
-          {pluginMenuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <DropdownMenuItem
-                key={item.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  item.run(host, rowShell);
-                }}
-              >
-                {Icon && <Icon className="size-3.5 mr-2" />}
-                {t(item.titleKey)}
-              </DropdownMenuItem>
-            );
-          })}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={(e) => {
@@ -975,65 +931,173 @@ export function HostItem({
             <Copy className="size-3.5 mr-2" />
             {t("hosts.copyAddress")}
           </DropdownMenuItem>
-          {authOverrideProtocols.map((protocol) => (
-            <DropdownMenuItem
-              key={protocol}
-              onClick={(e) => {
-                e.stopPropagation();
-                setAuthOverrideProtocol(protocol);
-              }}
-            >
-              <KeyRound className="size-3.5 mr-2" />
-              {t("hosts.sharing.authOverrideActionProtocol", {
-                protocol: authProtocolLabel(protocol, t),
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <MoreHorizontal className="size-3.5 mr-2" />
+              {t("hostTools.more")}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="text-xs w-auto min-w-44 max-w-72 whitespace-nowrap">
+              {pluginMenuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <DropdownMenuItem
+                    key={item.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.run(host, rowShell);
+                    }}
+                  >
+                    {Icon && <Icon className="size-3.5 mr-2" />}
+                    {t(item.titleKey)}
+                  </DropdownMenuItem>
+                );
               })}
-            </DropdownMenuItem>
-          ))}
-          {showPasswordCopy && (
-            <DropdownMenuItem
-              onClick={(e) => handleCopyPassword(e, "password")}
-            >
-              <Key className="size-3.5 mr-2" />
-              {t("nav.copyPassword")}
-            </DropdownMenuItem>
-          )}
-          {showSudoPasswordCopy && (
-            <DropdownMenuItem
-              onClick={(e) => handleCopyPassword(e, "sudoPassword")}
-            >
-              <KeyRound className="size-3.5 mr-2" />
-              {t("nav.copySudoPassword")}
-            </DropdownMenuItem>
-          )}
-          {copyLinkActions.length > 0 && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Link className="size-3.5 mr-2" />
-                {t("hosts.copyLink")}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {copyLinkActions.map((action) => {
-                  const Icon = action.icon;
-                  return (
+              {authOverrideProtocols.map((protocol) => (
+                <DropdownMenuItem
+                  key={protocol}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAuthOverrideProtocol(protocol);
+                  }}
+                >
+                  <KeyRound className="size-3.5 mr-2" />
+                  {t("hosts.sharing.authOverrideActionProtocol", {
+                    protocol: authProtocolLabel(protocol, t),
+                  })}
+                </DropdownMenuItem>
+              ))}
+              {showPasswordCopy && (
+                <DropdownMenuItem
+                  onClick={(e) => handleCopyPassword(e, "password")}
+                >
+                  <Key className="size-3.5 mr-2" />
+                  {t("nav.copyPassword")}
+                </DropdownMenuItem>
+              )}
+              {showSudoPasswordCopy && (
+                <DropdownMenuItem
+                  onClick={(e) => handleCopyPassword(e, "sudoPassword")}
+                >
+                  <KeyRound className="size-3.5 mr-2" />
+                  {t("nav.copySudoPassword")}
+                </DropdownMenuItem>
+              )}
+              {copyLinkActions.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Link className="size-3.5 mr-2" />
+                    {t("hosts.copyLink")}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {copyLinkActions.map((action) => {
+                      const Icon = action.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={action.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyText(
+                              `${window.location.origin}?view=${encodeURIComponent(action.copyUrlView!)}&hostId=${host.id}`,
+                            );
+                          }}
+                        >
+                          <Icon className="size-3.5 mr-2" />
+                          {t("hosts.copyViewUrlAction", {
+                            name: t(action.titleKey),
+                          })}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              {(pluginMenuItems.length > 0 ||
+                authOverrideProtocols.length > 0) && <DropdownMenuSeparator />}
+              {!pageOnly && canChangeHostRows() && clickable.length > 1 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <MousePointerClick className="size-3.5 mr-2" />
+                    {t("hostTools.clickOpens")}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup
+                      value={pickFrom(rowPrefs?.click)?.key ?? ""}
+                      onValueChange={(value) =>
+                        changeHostRow(String(host.id), {
+                          click: value || undefined,
+                        })
+                      }
+                    >
+                      <DropdownMenuRadioItem
+                        value=""
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {t("hostTools.useDefaultNamed", {
+                          name: defaultClickLabel,
+                        })}
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuSeparator />
+                      {clickable.map((entry) => {
+                        const Icon = entry.icon;
+                        return (
+                          <DropdownMenuRadioItem
+                            key={entry.key}
+                            value={entry.key}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Icon className="size-3.5 mr-2" />
+                            {entry.label}
+                          </DropdownMenuRadioItem>
+                        );
+                      })}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+              {!pageOnly && canChangeHostRows() && rowEntries.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <PanelTop className="size-3.5 mr-2" />
+                    {t("hostTools.rowButtons")}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {rowEntries.map((entry) => {
+                      const Icon = entry.icon;
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={entry.key}
+                          checked={entry.tray}
+                          onSelect={(e) => e.preventDefault()}
+                          onClick={(e) => e.stopPropagation()}
+                          onCheckedChange={(checked) =>
+                            changeHostRow(String(host.id), {
+                              bar: {
+                                ...rowPrefs?.bar,
+                                [entry.key]: checked === true,
+                              },
+                            })
+                          }
+                        >
+                          <Icon className="size-3.5 mr-2" />
+                          {entry.label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      key={action.id}
+                      disabled={!rowPrefs?.bar}
                       onClick={(e) => {
                         e.stopPropagation();
-                        copyText(
-                          `${window.location.origin}?view=${encodeURIComponent(action.copyUrlView!)}&hostId=${host.id}`,
-                        );
+                        changeHostRow(String(host.id), { bar: undefined });
                       }}
                     >
-                      <Icon className="size-3.5 mr-2" />
-                      {t("hosts.copyViewUrlAction", {
-                        name: t(action.titleKey),
-                      })}
+                      {t("hostTools.useDefaultButtons")}
                     </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           {allowDelete && (
             <>
               <DropdownMenuSeparator />
@@ -1092,11 +1156,12 @@ export function HostItem({
 
   const hostBadges = (
     <>
-      {rowFields.showBadges &&
-        badges.map((badge) => {
-          const Badge = badge.component;
-          return Badge ? <Badge key={badge.id} host={host} /> : null;
-        })}
+      {statusIndicators.length > 0 && (
+        <HostDataItems host={host} items={statusIndicators} className="gap-1" />
+      )}
+      {rowFields.showBadges && (
+        <HostDataItems host={host} items={badges} className="gap-1" />
+      )}
       {rowFields.showBadges && <HostDotGroup host={host} badges={badges} />}
       {rowFields.showSharedBadge && host.isShared && (
         <TooltipProvider delayDuration={300}>

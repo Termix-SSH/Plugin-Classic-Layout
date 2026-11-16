@@ -182,3 +182,51 @@ describe("host row badge slot", () => {
     expect(screen.getByText("dashboardTab.checking")).toBeTruthy();
   });
 });
+
+describe("host row data slots", () => {
+  afterEach(() => resetActionRegistry());
+
+  it("draws another plugin's row values and badge as data, no component needed", async () => {
+    const { renderWithApp } = await import("@termix-ssh/plugin-sdk/testing");
+    const seen: Array<Record<string, unknown>> = [];
+    await renderWithApp(
+      {
+        activate(app) {
+          app.registerSlotContribution("dashboard.hostRow", {
+            actionId: "metrics.row",
+            titleKey: "x",
+            kind: "data",
+            useValue: (context) => {
+              seen.push(context);
+              return {
+                shape: "bars",
+                items: [{ label: "CPU", value: 0.25 }],
+              };
+            },
+          });
+          app.registerSlotContribution("dashboard.hostRowBadge", {
+            actionId: "metrics.badge",
+            titleKey: "x",
+            kind: "data",
+            useValue: (context) =>
+              (context.host as Host | undefined)?.name === "bad"
+                ? { shape: "badge", label: "Failing", tone: "bad" }
+                : null,
+          });
+        },
+      },
+      { pluginId: "metrics" },
+    );
+    const hosts = [
+      { id: "1", name: "bad", ip: "192.0.2.1", status: "online" },
+      { id: "2", name: "good", ip: "192.0.2.2", status: "offline" },
+    ] as unknown as Host[];
+    render(<HostStatusCard hosts={hosts} onOpenTab={() => {}} />);
+    expect(await screen.findByText("Failing")).toBeTruthy();
+    expect(screen.getAllByText("25%")).toHaveLength(2);
+    expect(screen.getAllByText("hosts.status.offline")).toHaveLength(1);
+    expect(seen.some((context) => context.hostId === 1 && context.online)).toBe(
+      true,
+    );
+  });
+});

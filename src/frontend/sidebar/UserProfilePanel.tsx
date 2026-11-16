@@ -51,6 +51,7 @@ import {
   docsUrl,
   roleLabel,
 } from "@termix-ssh/plugin-sdk/ui";
+import { ProfileDetailsForm } from "./ProfileDetailsForm";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import { useState, useRef, useEffect } from "react";
 import { readRailPreference, setRailPreference } from "./rail-preferences";
@@ -77,6 +78,7 @@ import {
 } from "lucide-react";
 import { NavigationVisibilityToggles } from "./NavigationVisibilityToggles";
 import { InterfacePresetSettings } from "./InterfacePresetSettings";
+import { DesktopAppSettings } from "./DesktopAppSettings";
 import { useSettingsEmbedded } from "../settings/settings-embed";
 import { toast } from "sonner";
 import {
@@ -1231,6 +1233,7 @@ export function UserProfilePanel({
               </Button>
             </div>
           )}
+          {!isElectron() && <ProfileDetailsForm />}
           {(!isElectron() || isLinked) && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-0">
               <div className="flex flex-col py-2">
@@ -1409,6 +1412,7 @@ export function UserProfilePanel({
               window.dispatchEvent(new Event("termix:open-onboarding"))
             }
           />
+          <DesktopAppSettings />
         </div>
       </AccordionSection>
 

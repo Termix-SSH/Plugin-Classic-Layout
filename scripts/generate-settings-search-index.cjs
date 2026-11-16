@@ -78,6 +78,7 @@ function profileSections() {
     ...new Set([
       ...(out.interface ?? []),
       ...keysIn(read("InterfacePresetSettings.tsx")),
+      ...keysIn(read("DesktopAppSettings.tsx")),
     ]),
   ];
   out.security = [
@@ -92,6 +93,17 @@ function profileSections() {
       ...keysIn(functionBody(source, "NewApiKeyDialog")),
     ]),
   ];
+  for (const [id, file] of [
+    ["host-list", "HostListSettings.tsx"],
+    ["credential-list", "CredentialListSettings.tsx"],
+  ]) {
+    out[id] = keysIn(
+      fs.readFileSync(
+        path.join(ROOT, "src", "frontend", "settings", file),
+        "utf8",
+      ),
+    );
+  }
   out.keybindings = keysIn(
     fs.readFileSync(
       path.join(ROOT, "src", "frontend", "settings", "KeybindingsSettings.tsx"),
@@ -110,14 +122,18 @@ function adminSections() {
         ...keysIn(functionBody(settings, "AdminGeneralSettingsSection")),
         ...keysIn(read("AdminPluginDeveloperMode.tsx")),
         ...keysIn(read("AdminHttpsSetting.tsx")),
+        ...keysIn(read("AdminHostKeySetting.tsx")),
+        ...keysIn(read("AdminAccountSettingsSection.tsx")),
       ]),
     ],
     "admin-users": [
       ...new Set([
         ...keysIn(functionBody(management, "AdminUsersSection")),
         ...keysIn(read("AdminUserDialogs.tsx")),
+        ...keysIn(read("AdminInvitesSection.tsx")),
       ]),
     ],
+    "admin-access": keysIn(read("AdminAccessReviewSection.tsx")),
     "admin-sessions": keysIn(functionBody(management, "AdminSessionsSection")),
     "admin-roles": keysIn(functionBody(management, "AdminRolesSection")),
     "admin-host-defaults": [
