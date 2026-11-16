@@ -18,6 +18,7 @@ import {
   type UserPreferences,
   usePluginDocsUrl,
   docsUrl,
+  usePermissions,
 } from "@termix-ssh/plugin-sdk/ui";
 import { useTranslation } from "@termix-ssh/plugin-sdk/frontend";
 import {
@@ -106,6 +107,12 @@ export function SettingsTab({
   onOpenHostTab,
 }: SettingsTabProps) {
   const { t } = useTranslation();
+  const { has } = usePermissions();
+  // Someone with a helpdesk or auditor role sees just those admin pages.
+  const delegatedAdmin =
+    has("admin.users.view") ||
+    has("admin.sessions.manage") ||
+    has("admin.audit.view");
   const userFeatures = useFeatureSettings("user");
   const adminFeatures = useFeatureSettings("admin");
   const [query, setQuery] = useState("");
@@ -143,9 +150,9 @@ export function SettingsTab({
           (a.label ?? "").localeCompare(b.label ?? ""),
         ),
       ],
-      { isAdmin, isElectron: isElectron() },
+      { isAdmin, isElectron: isElectron(), has },
     );
-  }, [userFeatures, adminFeatures, isAdmin, t]);
+  }, [userFeatures, adminFeatures, isAdmin, has, t]);
 
   const [current, setCurrent] = useState(section ?? "account");
   useEffect(() => {
@@ -374,7 +381,7 @@ export function SettingsTab({
                       onOpenSettingsPage={go}
                     />
                   </div>
-                  {isAdmin && (
+                  {(isAdmin || delegatedAdmin) && (
                     <div className={showAdmin ? "contents" : "hidden"}>
                       <AdminSettingsPanel
                         section={page.adminSection ?? ("__none__" as never)}

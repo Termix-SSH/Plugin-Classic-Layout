@@ -8,6 +8,12 @@
 - Admin settings, General: a switch to trust new host keys without a prompt, for plugins and schedules that connect with nobody to ask
 - New API keys: pick read only, actions, run actions or full access, and an expiry or never. Left as is, a key is read only and works for 90 days
 - Making someone an admin or turning off password login says when the change waits for the other admins
+- Users can be turned off and back on from the user page, and new SSO accounts can wait for approval. The user list filters by active, turned off and waiting
+- Invite links: make a link with a role, an expiry and a number of uses, even with sign up off
+- Access review page: every host, folder and credential share in one list, with filters and CSV export, also on each user's page
+- Display name and email for each account, set by the user or an admin
+- Admin settings, Accounts and access: turn off admins opening every user's hosts, and approve new SSO accounts
+- People with a helpdesk or auditor role see the users, sessions, access review and audit log pages they are allowed to use
 
 ### Changed
 
