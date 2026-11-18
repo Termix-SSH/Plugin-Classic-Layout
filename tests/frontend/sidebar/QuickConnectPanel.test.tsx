@@ -30,6 +30,9 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
     () => ({
       useSshAuthEditors: () => authMocks.editors,
     }),
+    () => ({
+      usePluginStore: () => ({ settled: authMocks.settled }),
+    }),
   ];
   for (const factory of factories) {
     Object.assign(
@@ -42,6 +45,7 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
 const authMocks = vi.hoisted(() => ({
   providers: [] as Record<string, unknown>[],
   editors: [] as Record<string, unknown>[],
+  settled: true,
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 vi.mock("react-i18next", async (importOriginal) => {
@@ -97,6 +101,8 @@ afterEach(() => {
   cleanup();
   authMocks.providers = [];
   authMocks.editors = [];
+  authMocks.settled = true;
+  vi.useRealTimers();
   resetHostContributions();
 });
 
@@ -196,6 +202,39 @@ describe("QuickConnectPanel", () => {
     await renderPanel(onConnect);
     fireEvent.click(screen.getByText(buttonName("nav.terminal")));
     expect(onConnect).not.toHaveBeenCalled();
+  });
+
+  it("shows loading while plugins still start", async () => {
+    authMocks.settled = false;
+    await renderPanel();
+    expect(
+      screen.getByText("newUi.sidebar.quickConnect.loadingTargets"),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("newUi.sidebar.quickConnect.noTarget"),
+    ).toBeNull();
+  });
+
+  it("waits a moment for connect answers before saying none apply", async () => {
+    vi.useFakeTimers();
+    registerHostAction({
+      id: "rdp",
+      titleKey: "hosts.tabRdp",
+      icon: Monitor,
+      kind: "connect",
+      tabType: "rdp",
+      when: () => false,
+    });
+    await renderPanel();
+    expect(
+      screen.getByText("newUi.sidebar.quickConnect.loadingTargets"),
+    ).toBeTruthy();
+    await act(async () => {
+      vi.advanceTimersByTime(4_100);
+    });
+    expect(
+      screen.getByText("newUi.sidebar.quickConnect.noTarget"),
+    ).toBeTruthy();
   });
 
   it("says so when nothing can connect", async () => {

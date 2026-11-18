@@ -145,6 +145,27 @@ describe("EditorPane jump", () => {
 });
 
 describe("useScrollSpy scrollTo", () => {
+  it("jumps to a section without animating", () => {
+    const container = document.createElement("div");
+    const section = document.createElement("div");
+    section.dataset.section = "rdp";
+    container.appendChild(section);
+    document.body.appendChild(container);
+    section.getBoundingClientRect = () => ({ top: 300 }) as DOMRect;
+    container.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
+    const behaviors: (ScrollBehavior | undefined)[] = [];
+    container.scrollTo = ((options: ScrollToOptions) => {
+      behaviors.push(options.behavior);
+    }) as typeof container.scrollTo;
+
+    const ref = { current: container };
+    const { result } = renderHook(() => useScrollSpy(ref, ["general", "rdp"]));
+    act(() => result.current.scrollTo("rdp"));
+
+    expect(behaviors).toEqual(["auto"]);
+    container.remove();
+  });
+
   it("follows a section that moves while the form is still mounting", async () => {
     const container = document.createElement("div");
     const section = document.createElement("div");

@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import sharp from "sharp";
 import {
   BRANDING_DEFAULT_APP_NAME,
   BRANDING_LOGO_MAX_BYTES,
@@ -7,6 +6,7 @@ import {
   parseBrandingLogoDataUrl,
   parseBrandingTagline,
 } from "../../src/backend/branding";
+import { jpegImage, pngClaiming, pngImage, pngWithText } from "./images";
 
 async function toDataUrl(
   buffer: Buffer,
@@ -20,18 +20,12 @@ let jpegBuffer: Buffer;
 let webpBuffer: Buffer;
 let oversizedPngBuffer: Buffer;
 
-beforeAll(async () => {
-  const image = sharp({
-    create: { width: 4, height: 4, channels: 3, background: "#336699" },
-  });
-  pngBuffer = await image.clone().png().toBuffer();
-  jpegBuffer = await image.clone().jpeg().toBuffer();
-  webpBuffer = await image.clone().webp().toBuffer();
-  oversizedPngBuffer = await sharp({
-    create: { width: 1200, height: 1200, channels: 4, background: "#abcdef" },
-  })
-    .png({ compressionLevel: 0 })
-    .toBuffer();
+beforeAll(() => {
+  pngBuffer = pngImage();
+  jpegBuffer = jpegImage();
+  // Only the RIFF header: WebP is turned away before decoding.
+  webpBuffer = Buffer.from("52494646240000005745425056503820", "hex");
+  oversizedPngBuffer = pngImage(600, 600, true);
 });
 
 describe("parseBrandingAppName", () => {
@@ -92,12 +86,35 @@ describe("parseBrandingLogoDataUrl", () => {
     expect(result!.startsWith("data:image/png;base64,")).toBe(true);
   });
 
-  it("accepts a WEBP data URL and normalizes it to PNG", async () => {
+  it("turns a WebP data URL away, the settings page sends those as PNG", async () => {
     const result = await parseBrandingLogoDataUrl(
       await toDataUrl(webpBuffer, "image/webp"),
     );
+    expect(result).toBeNull();
+  });
+
+  it("drops text chunks, so no metadata is kept", async () => {
+    const result = await parseBrandingLogoDataUrl(
+      await toDataUrl(pngWithText("secret-note"), "image/png"),
+    );
     expect(result).not.toBeNull();
-    expect(result!.startsWith("data:image/png;base64,")).toBe(true);
+    const decoded = Buffer.from(result!.split(",")[1]!, "base64");
+    expect(decoded.includes("secret-note")).toBe(false);
+    expect(decoded.includes("tEXt")).toBe(false);
+  });
+
+  it("refuses a PNG that claims more pixels than the cap before decoding", async () => {
+    const result = await parseBrandingLogoDataUrl(
+      await toDataUrl(pngClaiming(5000, 5000), "image/png"),
+    );
+    expect(result).toBeNull();
+  });
+
+  it("refuses JPEG bytes sent as a PNG", async () => {
+    const result = await parseBrandingLogoDataUrl(
+      await toDataUrl(jpegBuffer, "image/png"),
+    );
+    expect(result).toBeNull();
   });
 
   it("rejects a non-image/SVG mime prefix outright", async () => {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import type { Tab } from "@termix-ssh/plugin-sdk/ui";
+import type { Host, Tab } from "@termix-ssh/plugin-sdk/ui";
 import type { SplitSummary } from "@termix-ssh/plugin-sdk/ui";
 
 vi.mock("react-i18next", async (importOriginal) => {
@@ -52,7 +52,13 @@ vi.mock("@termix-ssh/plugin-sdk/ui", async (importOriginal) => {
   const merged: Record<string, unknown> = { ...original };
   const factories: Array<
     (importOriginal: <T = Record<string, unknown>>() => Promise<T>) => unknown
-  > = [() => ({ isElectron: () => true })];
+  > = [
+    () => ({
+      isElectron: () => true,
+      // Terminal tabs count as live sessions, so they get a refresh button.
+      isSessionTabType: (type: string) => type === "terminal",
+    }),
+  ];
   for (const factory of factories) {
     Object.assign(
       merged,
@@ -112,6 +118,53 @@ describe("TabBar workspace continuity", () => {
     fireEvent.click(getByText("web-01"));
 
     expect(onSetActiveTab).toHaveBeenCalledWith("terminal-1");
+  });
+});
+
+describe("TabBar long tab titles", () => {
+  const longName = "rhiz3k-HP-ProDesk-600-G6-Desktop-Mini-PC";
+  const longTabs = [
+    ...tabs,
+    { id: "terminal-2", type: "terminal", label: longName },
+  ] as Tab[];
+
+  it("truncates a long hostname and keeps the full name as a tooltip", () => {
+    const { getByText } = render(<TabBar {...props({ tabs: longTabs })} />);
+    const title = getByText(longName);
+
+    expect(title).toBeTruthy();
+    expect(title.classList.contains("truncate")).toBe(true);
+    expect(title.classList.contains("min-w-0")).toBe(true);
+    expect(title.getAttribute("title")).toBe(longName);
+  });
+
+  it("caps the tab width on mobile only", () => {
+    const { getByText } = render(<TabBar {...props({ tabs: longTabs })} />);
+    const tabRoot = getByText(longName).parentElement as HTMLElement;
+    const classes = Array.from(tabRoot.classList);
+
+    expect(
+      classes.some((c) => c.startsWith("max-w-") && c !== "max-w-none"),
+    ).toBe(true);
+    expect(classes).toContain("md:max-w-none");
+  });
+
+  it("keeps the refresh and close buttons on a long connection tab", () => {
+    const { getByText } = render(
+      <TabBar {...props({ tabs: longTabs, activeTabId: "terminal-2" })} />,
+    );
+    const tabRoot = getByText(longName).parentElement as HTMLElement;
+
+    expect(within(tabRoot).getByLabelText("nav.refreshTab")).toBeTruthy();
+    expect(within(tabRoot).getByLabelText("nav.close")).toBeTruthy();
+  });
+
+  it("still shows a short name in full", () => {
+    const { getByText } = render(<TabBar {...props({ tabs: longTabs })} />);
+    const title = getByText("web-01");
+
+    expect(title).toBeTruthy();
+    expect(title.getAttribute("title")).toBe("web-01");
   });
 });
 
@@ -226,5 +279,39 @@ describe("bulk reconnect menu", () => {
     fireEvent.click(view.getByText("nav.reconnectDisconnectedTerminals"));
     expect(onReconnectDisconnected).toHaveBeenCalledOnce();
     expect(view.queryByText("nav.reconnectDisconnectedTerminals")).toBeNull();
+  });
+});
+
+describe("TabBar edit host", () => {
+  const host = { id: "7", name: "web-01" } as unknown as Host;
+  const hostTab = { ...tabs[1], host } as Tab;
+
+  function openMenu(overrides: Partial<ComponentProps<typeof TabBar>> = {}) {
+    const onEditHost = vi.fn();
+    const view = render(
+      <TabBar
+        {...props({ tabs: [tabs[0], hostTab], onEditHost, ...overrides })}
+      />,
+    );
+    fireEvent.contextMenu(view.getByText("web-01"));
+    return { ...view, onEditHost };
+  }
+
+  it("opens the saved host's editor from the tab menu", () => {
+    const saved = { ...host, name: "web-01 (renamed)" };
+    const { getByText, onEditHost } = openMenu({ hosts: [saved] });
+    fireEvent.click(getByText("hosts.editHostAction"));
+    expect(onEditHost).toHaveBeenCalledWith(saved);
+  });
+
+  it("hides it when the tab's host is not a saved host", () => {
+    const { queryByText } = openMenu({ hosts: [] });
+    expect(queryByText("hosts.editHostAction")).toBeNull();
+  });
+
+  it("hides it on a shared host the user cannot edit", () => {
+    const shared = { ...host, isShared: true, permissionLevel: "connect" };
+    const { queryByText } = openMenu({ hosts: [shared as Host] });
+    expect(queryByText("hosts.editHostAction")).toBeNull();
   });
 });
