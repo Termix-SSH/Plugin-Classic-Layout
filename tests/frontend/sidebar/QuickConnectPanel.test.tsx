@@ -196,6 +196,37 @@ describe("QuickConnectPanel", () => {
     );
   });
 
+  it("connects on Enter with a plugin that only answered for the shown host", async () => {
+    // A framed plugin answers per host object, so a host built anew on
+    // Enter has no answer yet.
+    let now = 1_000;
+    vi.spyOn(Date, "now").mockImplementation(() => (now += 1));
+    const answeredFor = new Map<string, unknown>();
+    registerHostAction({
+      id: "framed-terminal",
+      titleKey: "nav.terminal",
+      icon: Terminal,
+      kind: "connect",
+      tabType: "terminal",
+      when: (host) => {
+        if (!answeredFor.has(host.ip)) answeredFor.set(host.ip, host.id);
+        return answeredFor.get(host.ip) === host.id;
+      },
+    });
+    const onConnect = vi.fn();
+    await renderPanel(onConnect);
+    const input = screen.getByPlaceholderText(
+      "newUi.sidebar.quickConnect.hostPlaceholder",
+    );
+    fireEvent.change(input, { target: { value: "example.com" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onConnect).toHaveBeenCalledWith(
+      expect.objectContaining({ ip: "example.com" }),
+      "terminal",
+    );
+    vi.restoreAllMocks();
+  });
+
   it("does nothing without an address", async () => {
     registerDefaults();
     const onConnect = vi.fn();

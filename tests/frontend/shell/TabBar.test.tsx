@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  within,
+} from "@testing-library/react";
 import type { ComponentProps } from "react";
 import type { Host, Tab } from "@termix-ssh/plugin-sdk/ui";
 import type { SplitSummary } from "@termix-ssh/plugin-sdk/ui";
@@ -109,6 +115,43 @@ describe("TabBar workspace continuity", () => {
     expect(
       container.querySelector('[data-tab-indicator="terminal-1"]'),
     ).toBeTruthy();
+  });
+
+  it("resizes the indicator when a tab grows on its own", () => {
+    const callbacks: (() => void)[] = [];
+    const fire = () => callbacks.forEach((cb) => cb());
+    const observed: Element[] = [];
+    class FakeObserver {
+      constructor(cb: () => void) {
+        callbacks.push(cb);
+      }
+      observe(el: Element) {
+        observed.push(el);
+      }
+      disconnect() {}
+    }
+    vi.stubGlobal("ResizeObserver", FakeObserver);
+    try {
+      const { container } = render(
+        <TabBar {...props({ activeTabId: "terminal-1" })} />,
+      );
+      const indicator = () =>
+        container.querySelector<HTMLElement>("[data-tab-indicator]")!;
+      const tabEl = observed
+        .filter((el) => el.textContent?.includes("web-01"))
+        .at(-1);
+      expect(tabEl).toBeTruthy();
+
+      Object.defineProperty(tabEl, "offsetWidth", {
+        configurable: true,
+        value: 140,
+      });
+      act(() => fire());
+
+      expect(indicator().style.width).toBe("140px");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("activates a workspace immediately when its tab is clicked", () => {
