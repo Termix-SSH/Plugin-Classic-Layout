@@ -41,6 +41,13 @@ describe("buildStatusTooltip", () => {
     expect(tooltip).not.toContain("hosts.status.");
   });
 
+  it("says checks are off, not 'Checking', when nothing checks hosts", () => {
+    const host = makeHost();
+    expect(buildStatusTooltip(host, "unknown", t, true)).toBe(
+      "Monitoring disabled",
+    );
+  });
+
   it("returns 'Checking' before the host has been checked", () => {
     const host = makeHost();
     const tooltip = buildStatusTooltip(host, "unknown", t);

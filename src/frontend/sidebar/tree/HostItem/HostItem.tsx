@@ -109,6 +109,7 @@ import {
 } from "../../host-permissions";
 import { HostAuthOverrideModal } from "../../HostAuthOverrideModal";
 import { hostMatchesQuery } from "../visible-rows";
+import { useStatusChecksOff } from "../../../status-checks-off";
 
 export function statusCheckEnabled(host: Host): boolean {
   return host.statusCheckEnabled !== false;
@@ -118,8 +119,11 @@ export function buildStatusTooltip(
   host: Host,
   status: "online" | "offline" | "unknown",
   t: (key: string) => string = (k) => k,
+  checksOff = false,
 ): string {
-  if (!statusCheckEnabled(host)) return t("hosts.status.monitoringDisabled");
+  if (checksOff || !statusCheckEnabled(host)) {
+    return t("hosts.status.monitoringDisabled");
+  }
   const statusLabel =
     status === "online"
       ? t("hosts.status.online")
@@ -318,7 +322,8 @@ export function HostItem({
   const pluginMenuItems = hostMenuItemsFor(useHostContextMenuItems(), host);
   const splitTargets = useSplitTargets();
   const statusScheme = useStatusColorScheme();
-  const statusCheckOn = statusCheckEnabled(host);
+  const checksOff = useStatusChecksOff();
+  const statusCheckOn = statusCheckEnabled(host) && !checksOff;
   // Per-host subscription, so a poll only re-renders rows that flipped.
   const availability =
     useHostStatus(Number(host.id), statusCheckOn) ?? "offline";
@@ -1473,11 +1478,11 @@ export function HostItem({
                         showPort: true,
                       }),
                       host.tags?.join(", "),
-                      buildStatusTooltip(host, availability, t),
+                      buildStatusTooltip(host, availability, t, checksOff),
                     ]
                       .filter(Boolean)
                       .join("\n")
-                  : buildStatusTooltip(host, availability, t)}
+                  : buildStatusTooltip(host, availability, t, checksOff)}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
