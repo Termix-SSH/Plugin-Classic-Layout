@@ -78,6 +78,7 @@ import {
 import { toast } from "sonner";
 import { withLiveHostStatus } from "../sidebar/live-host-status";
 import { sortHostTree, type SortKey } from "../sidebar/host-sort";
+import { useStatusChecksOff } from "../status-checks-off";
 import {
   CountersStrip,
   HostStatusList,
@@ -298,6 +299,8 @@ export function DashboardTab({
   const { t, language } = useTranslation();
   const confirm = useConfirm();
   const { initialLoadComplete } = useServerStatusMeta();
+  // Nothing checks hosts, so the status card would show them checking forever.
+  const checksOff = useStatusChecksOff();
   const statusLoading = !initialLoadComplete;
 
   const [cards, setCards] = useState<GridCard[]>(() => {
@@ -437,7 +440,10 @@ export function DashboardTab({
     }
   });
   const statusCheckHosts = sortHostTree(
-    { name: "", children: hosts.filter(isStatusCheckEnabled) },
+    {
+      name: "",
+      children: checksOff ? [] : hosts.filter(isStatusCheckEnabled),
+    },
     hostStatusSort,
   ).children as Host[];
 
